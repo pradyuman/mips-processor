@@ -3,6 +3,8 @@
  * Input: Port A (A), Port B (B), opcode (ALUOP)
  * Output: Output Port (O), Flags (N, Z, V)
  */
+`ifndef ALU_IF_VH
+`define ALU_IF_VH
 `include "cpu_types_pkg.vh"
 
 interface alu_if;
@@ -12,7 +14,7 @@ interface alu_if;
 
    modport alu (
      input A, B, ALUOP,
-     output O, N, Z, V
+     output O, N, V, Z
    );
 
    modport tb (
@@ -20,3 +22,5 @@ interface alu_if;
      output A, B, ALUOP
    );
 endinterface
+
+`endif // ALU_IF_VH

@@ -1,13 +1,10 @@
 `include "alu_if.vh"
+`include "cpu_types_pkg.vh"
 `timescale 1 ns / 1 ns
 import cpu_types_pkg::*;
 
 module alu_tb;
   alu_if aluif();
-  _tb alu_tb(aluif.tb);
-endmodule // alu_tb
-
-module _tb (alu_if.tb aluif);
   alu DUT(.aluif);
 
   enum { SLL, SRL, ADD, SUB, AND, OR, XOR, NOR, SLT, SLTU, N, Z, V } ops;
@@ -58,7 +55,6 @@ module _tb (alu_if.tb aluif);
     testZFlag(errors[Z]);
     resolve("Zero Flag", errors[Z]);
 
-    // Test Overflow
     testVFlag(errors[V]);
     resolve("Overflow Flag", errors[V]);
 
@@ -111,7 +107,7 @@ module _tb (alu_if.tb aluif);
 
   task automatic error(word_t expected, out, ref integer e);
     $display("ERROR: %s | A - %b | B - %b | EXPECTED - %b | REAL - %b",
-              aluif.ALUOP, $signed(aluif.A), $signed(aluif.B), expected, out);
+             aluif.ALUOP, $signed(aluif.A), $signed(aluif.B), expected, out);
     e++;
   endtask
 endmodule

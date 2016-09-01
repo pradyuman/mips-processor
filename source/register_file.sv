@@ -1,3 +1,4 @@
+`include "cpu_types_pkg.vh"
 `include "register_file_if.vh"
 
 module register_file (input logic CLK, nRST, register_file_if.rf rfif);
