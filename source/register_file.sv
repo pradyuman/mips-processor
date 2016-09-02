@@ -10,10 +10,8 @@ module register_file (input logic CLK, nRST, register_file_if.rf rfif);
    assign rfif.rdat2 = register_file[rfif.rsel2];
 
    // write and reset logic
-   always_ff @ (posedge CLK, negedge nRST) begin
-      if (nRST == 1'b0)
-        register_file <= '0;
-      else if (rfif.WEN && rfif.wsel != 0)
+   always_ff @ (posedge CLK, negedge nRST)
+      if (!nRST) register_file <= '0;
+      else if (rfif.WEN && rfif.wsel)
         register_file[rfif.wsel] <= rfif.wdat;
-   end
 endmodule
