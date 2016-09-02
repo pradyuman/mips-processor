@@ -107,7 +107,7 @@ module alu_tb;
 
   task automatic error(word_t expected, out, ref integer e);
     $display("ERROR: %s | A - %b | B - %b | EXPECTED - %b | REAL - %b",
-             aluif.ALUOP, $signed(aluif.A), $signed(aluif.B), expected, out);
+             aluif.ALUOP, aluif.A, aluif.B, expected, out);
     e++;
   endtask
 endmodule
