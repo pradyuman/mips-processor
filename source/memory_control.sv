@@ -1,6 +1,6 @@
 `include "cache_control_if.vh"
 `include "cpu_types_pkg.vh"
-import cpu_types_pkg::ACCESS
+import cpu_types_pkg::*;
 
 module memory_control #(parameter CPUS = 2) (cache_control_if.cc ccif);
   assign ccif.ramREN = ccif.dREN | ccif.iREN;
@@ -12,7 +12,6 @@ module memory_control #(parameter CPUS = 2) (cache_control_if.cc ccif);
   assign ccif.iload = ccif.ramload;
   assign ccif.dload = ccif.ramload;
 
-  assign ~iwait = ccif.iREN && ramstate == ACCESS;
-  assign ~dwait = (ccif.dREN && ramstate == ACCESS) ||
-                  (ccif.dWEN && ramstate == FREE);
+  assign ccif.iwait = !(ccif.iREN && ccif.ramstate == ACCESS);
+  assign ccif.dwait = !((ccif.dREN || ccif.dWEN) && ccif.ramstate == ACCESS);
 endmodule
