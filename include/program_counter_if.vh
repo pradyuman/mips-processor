@@ -1,24 +1,24 @@
-/**
- * Program Counter Interface.
- * Input: Port A (A), Port B (B), opcode (ALUOP)
- * Output: Output Port (O), Flags (N, Z, V)
- */
 `ifndef PROGRAM_COUNTER_IF_VH
 `define PROGRAM_COUNTER_IF_VH
+`include "cpu_types_pkg.vh"
+`include "mux_signals.vh"
+import cpu_types_pkg::*;
+import mux_signals::pc_ms;
 
 interface program_counter_if;
-   logic [31:0] val, ext32, jr_a;
-   logic [25:0] jump_a;
-   logic [1:0]  pc_sel;
-   logic        ihit;
+  word_t val, ext32, jr_a;
+  pc_ms sel;
+  logic [ADDR_W-1:0] jump_a;
+  logic en;
 
-   modport server (
-     input  pc_sel, ihit,
-            ext32, jr_a, jump_a,
-     output val
-   );
+  modport pc (
+    input  en, sel, ext32, jr_a, jump_a,
+    output val
+  );
 
-   modport driver (output pc_sel, ext32, jr_a, jump_a);
+  modport cr (
+    output en, sel, jump_a
+  );
 endinterface
 
-`endif // PROGRAM_COUNTER_IF_VH
+`endif

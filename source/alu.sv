@@ -1,9 +1,9 @@
 `include "alu_if.vh"
 import cpu_types_pkg::*;
 
-module alu #(parameter SIZE = 32) (alu_if.alu aluif);
+module alu (alu_if.alu aluif);
   always_comb begin
-    unique case (aluif.ALUOP)
+    unique case (aluif.ALUOP) inside
       ALU_SLL:  aluif.O = aluif.A << aluif.B;
       ALU_SRL:  aluif.O = aluif.A >> aluif.B;
       ALU_ADD:  aluif.O = $signed(aluif.A) + $signed(aluif.B);
@@ -17,11 +17,13 @@ module alu #(parameter SIZE = 32) (alu_if.alu aluif);
       default:  aluif.O = 32'hBAD_C0DE;
     endcase
 
-    aluif.N = aluif.O[SIZE-1];
+    aluif.N = aluif.O[WORD_W-1];
     aluif.Z = ~|aluif.O;
     unique case (aluif.ALUOP)
-      ALU_ADD: aluif.V = aluif.A[SIZE-1] == aluif.B[SIZE-1] && aluif.B[SIZE-1] != aluif.O[SIZE-1];
-      ALU_SUB: aluif.V = aluif.A[SIZE-1] != aluif.B[SIZE-1] && aluif.B[SIZE-1] == aluif.O[SIZE-1];
+      ALU_ADD: aluif.V = aluif.A[WORD_W-1] == aluif.B[WORD_W-1] &&
+                         aluif.B[WORD_W-1] != aluif.O[WORD_W-1];
+      ALU_SUB: aluif.V = aluif.A[WORD_W-1] != aluif.B[WORD_W-1] &&
+                         aluif.B[WORD_W-1] == aluif.O[WORD_W-1];
       default: aluif.V = 0;
     endcase
   end
