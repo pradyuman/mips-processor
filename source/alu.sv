@@ -3,7 +3,7 @@ import cpu_types_pkg::*;
 
 module alu (alu_if.alu aluif);
   always_comb begin
-    unique case (aluif.ALUOP) inside
+    casez (aluif.ALUOP)
       ALU_SLL:  aluif.O = aluif.A << aluif.B;
       ALU_SRL:  aluif.O = aluif.A >> aluif.B;
       ALU_ADD:  aluif.O = $signed(aluif.A) + $signed(aluif.B);

@@ -4,16 +4,14 @@
 `include "datapath_cache_if.vh"
 `include "program_counter_if.vh"
 `include "register_file_if.vh"
-`include "mux_signals.vh"
 import cpu_types_pkg::*;
-import mux_signals::*;
 
 /**
  * ALUIF:
  *   input Z, output ALUOP
  * CRIF:
- *   output alu_b_sel, wdat_sel, ext32, shamt
- * DCIF:
+ *   output alu_b_sel, rf_wdat_sel, ext32, shamt
+ * DPIF:
  *   input ihit, imemload, dhit,
  *   output halt
  * PCIF:
@@ -24,41 +22,59 @@ import mux_signals::*;
 module controller (
   alu_if.cr aluif,
   controller_if.cr crif,
-  datapath_cache_if.dp dcif,
+  datapath_cache_if.dp dpif,
   program_counter_if.cr pcif,
   register_file_if.tb rfif
 );
-  //assign crif.shamt = {{27{0}}, dcif.imemload[10:6]};
-  assign pcif.en = dcif.ihit;
-  assign pcif.jump_a = dcif.imemload[ADDR_W-1:0];
+  /* Program Counter Select Signals */
+  typedef enum logic [1:0] {
+    PC_BRANCH, PC_JRA, PC_JUMP, PC_NPC
+  } pc_ms;
+
+  /* ALU Port B Select Signals */
+  typedef enum logic [1:0] {
+    AB_EXT32, AB_RF, AB_SHAMT
+  } alu_b_ms;
+
+  /* Register File WDAT Select Signals */
+  typedef enum logic [1:0] {
+    RFW_ALUO, RFW_IMM16, RFW_NPC, RFW_RAMDATA
+  } rf_wdat_ms;
+
+  opcode_t instruction;
+  assign instruction = opcode_t'(dpif.imemload[31:26]);
+  assign crif.shamt = {{27{1'b0}}, dpif.imemload[10:6]};
+  assign pcif.jump_a = dpif.imemload[ADDR_W-1:0];
 
   always_comb begin
     aluif.ALUOP = aluop_t'('x);
-    crif.alu_b_sel = EXT32;
-    crif.rf_wdat_sel = rf_wdat_ms'('x);
-    crif.ext32 = {{16{dcif.imemload[15]}}, dcif.imemload[15:0]};
-    dcif.halt = 0;
-    pcif.sel = NPC;
-    rfif.WEN = dcif.ihit;
-    rfif.rsel1 = dcif.imemload[25:21];
-    rfif.rsel2 = dcif.imemload[20:16];
-    rfif.wsel = dcif.imemload[20:16];
-    casez (dcif.imemload[31:26])
+    crif.alu_b_sel = alu_b_ms'('x);
+    crif.ext32 = {{16{dpif.imemload[15]}}, dpif.imemload[15:0]};
+    crif.rf_wdat_sel = RFW_ALUO;
+    dpif.halt = 0;
+    pcif.en = dpif.ihit;
+    pcif.sel = PC_NPC;
+    rfif.rsel1 = dpif.imemload[25:21];
+    rfif.rsel2 = regbits_t'('x);
+    rfif.WEN = dpif.ihit || dpif.dhit;
+    rfif.wsel = dpif.imemload[20:16];
+    casez (instruction)
       RTYPE: begin
-        crif.alu_b_sel = RF;
-        crif.rf_wdat_sel = ALUO;
-        rfif.wsel = dcif.imemload[15:11];
-        casez (dcif.imemload[5:0])
+        crif.alu_b_sel = AB_RF;
+        rfif.rsel2 = dpif.imemload[20:16];
+        rfif.wsel = dpif.imemload[15:11];
+        casez (dpif.imemload[5:0])
           SLL: begin
             aluif.ALUOP = ALU_SLL;
-            crif.alu_b_sel = SHAMT;
+            crif.alu_b_sel = AB_SHAMT;
           end
           SRL: begin
             aluif.ALUOP = ALU_SRL;
-            crif.alu_b_sel = SHAMT;
+            crif.alu_b_sel = AB_SHAMT;
           end
           JR: begin
-            pcif.sel = JRA;
+            pcif.sel = PC_JRA;
+            rfif.rsel1 = 31;
             rfif.WEN = 0;
           end
           ADD,ADDU: aluif.ALUOP = ALU_ADD;
@@ -72,43 +88,86 @@ module controller (
         endcase
       end
       J: begin
-        crif.alu_b_sel = alu_b_ms'('x);
-        pcif.sel = JUMP;
+        crif.ext32 = regbits_t'('x);
+        crif.rf_wdat_sel = rf_wdat_ms'('x);
+        pcif.sel = PC_JUMP;
+        rfif.WEN = 0;
+        rfif.rsel1 = regbits_t'('x);
+        rfif.wsel = regbits_t'('x);
       end
       JAL: begin
-        crif.alu_b_sel = alu_b_ms'('x);
-        pcif.sel = JUMP;
+        crif.ext32 = regbits_t'('x);
+        crif.rf_wdat_sel = RFW_NPC;
+        pcif.sel = PC_JUMP;
         rfif.wsel = 31;
+        rfif.rsel1 = regbits_t'('x);
       end
       BEQ: begin
+        aluif.ALUOP = ALU_SUB;
+        crif.alu_b_sel = AB_RF;
+        rfif.rsel2 = dpif.imemload[20:16];
+        rfif.WEN = 0;
+        if (aluif.Z) pcif.sel = PC_BRANCH;
       end
       BNE: begin
+        aluif.ALUOP = ALU_SUB;
+        crif.alu_b_sel = AB_RF;
+        rfif.rsel2 = dpif.imemload[20:16];
+        rfif.WEN = 0;
+        if (!aluif.Z) pcif.sel = PC_BRANCH;
       end
       ADDI,ADDIU: begin
+        aluif.ALUOP = ALU_ADD;
+        crif.alu_b_sel = AB_EXT32;
       end
       SLTI: begin
+        aluif.ALUOP = ALU_SLT;
+        crif.alu_b_sel = AB_EXT32;
       end
       SLTIU: begin
+        aluif.ALUOP = ALU_SLTU;
+        crif.alu_b_sel = AB_EXT32;
       end
       ANDI: begin
+        aluif.ALUOP = ALU_AND;
+        crif.alu_b_sel = AB_EXT32;
+        crif.ext32 = {{16{1'b0}}, dpif.imemload[15:0]};
       end
       ORI: begin
+        aluif.ALUOP = ALU_OR;
+        crif.alu_b_sel = AB_EXT32;
+        crif.ext32 = {{16{1'b0}}, dpif.imemload[15:0]};
       end
       XORI: begin
+        aluif.ALUOP = ALU_XOR;
+        crif.alu_b_sel = AB_EXT32;
+        crif.ext32 = {{16{1'b0}}, dpif.imemload[15:0]};
       end
       LUI: begin
+        crif.rf_wdat_sel = RFW_IMM16;
+        rfif.rsel1 = regbits_t'('x);
       end
       LW: begin
+        aluif.ALUOP = ALU_ADD;
+        crif.alu_b_sel = AB_EXT32;
+        crif.rf_wdat_sel = RFW_RAMDATA;
       end
       SW: begin
-      end
-      LL: begin
-      end
-      SC: begin
+        aluif.ALUOP = ALU_ADD;
+        crif.alu_b_sel = AB_EXT32;
+        crif.rf_wdat_sel = rf_wdat_ms'('x);
+        rfif.WEN = 0;
+        rfif.rsel2 = dpif.imemload[20:16];
+        rfif.wsel = regbits_t'('x);
       end
       HALT: begin
-      end
-      default: begin
+        crif.rf_wdat_sel = RFW_ALUO;
+        dpif.halt = 1;
+        pcif.en = 0;
+        pcif.sel = pc_ms'('x);
+        rfif.rsel1 = regbits_t'('x);
+        rfif.WEN = 0;
+        rfif.wsel = regbits_t'('x);
       end
     endcase
   end

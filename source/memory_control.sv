@@ -2,7 +2,10 @@
 `include "cpu_types_pkg.vh"
 import cpu_types_pkg::*;
 
-module memory_control #(parameter CPUS = 2) (cache_control_if.cc ccif);
+module memory_control #(parameter CPUS = 2) (
+  input CLK, nRST,
+  cache_control_if.cc ccif
+);
   assign ccif.ramREN = ccif.dREN | ccif.iREN;
   assign ccif.ramWEN = ccif.dWEN;
 
