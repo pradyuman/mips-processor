@@ -1,3 +1,3 @@
-# Singlecyle Diagram
+# Single Cycle Diagram
 
-[[https://github.com/pradyuman/processor/blob/master/source/singlecycle.png]]
+![Single Cycle Diagram](source/singlecycle.png?raw=true "Single Cycle Diagram")
