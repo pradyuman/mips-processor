@@ -2,29 +2,22 @@
 import cpu_types_pkg::*;
 
 module alu (alu_if.alu aluif);
-  always_comb begin
-    casez (aluif.ALUOP)
-      ALU_SLL:  aluif.O = aluif.A << aluif.B;
-      ALU_SRL:  aluif.O = aluif.A >> aluif.B;
-      ALU_ADD:  aluif.O = $signed(aluif.A) + $signed(aluif.B);
-      ALU_SUB:  aluif.O = $signed(aluif.A) - $signed(aluif.B);
-      ALU_AND:  aluif.O = aluif.A & aluif.B;
-      ALU_OR:   aluif.O = aluif.A | aluif.B;
-      ALU_XOR:  aluif.O = aluif.A ^ aluif.B;
-      ALU_NOR:  aluif.O = ~(aluif.A | aluif.B);
-      ALU_SLT:  aluif.O = $signed(aluif.A) < $signed(aluif.B);
-      ALU_SLTU: aluif.O = aluif.A < aluif.B;
-      default:  aluif.O = 32'hBAD_C0DE;
-    endcase
+  always_comb casez (aluif.op)
+    ALU_SLL:  aluif.out = aluif.a << aluif.b;
+    ALU_SRL:  aluif.out = aluif.a >> aluif.b;
+    ALU_ADD:  aluif.out = $signed(aluif.a) + $signed(aluif.b);
+    ALU_SUB:  aluif.out = $signed(aluif.a) - $signed(aluif.b);
+    ALU_AND:  aluif.out = aluif.a & aluif.b;
+    ALU_OR:   aluif.out = aluif.a | aluif.b;
+    ALU_XOR:  aluif.out = aluif.a ^ aluif.b;
+    ALU_NOR:  aluif.out = ~(aluif.a | aluif.b);
+    ALU_SLT:  aluif.out = $signed(aluif.a) < $signed(aluif.b);
+    ALU_SLTU: aluif.out = aluif.a < aluif.b;
+    default:  aluif.out = 32'hBAD_C0DE;
+  endcase
 
-    aluif.N = aluif.O[WORD_W-1];
-    aluif.Z = ~|aluif.O;
-    unique case (aluif.ALUOP)
-      ALU_ADD: aluif.V = aluif.A[WORD_W-1] == aluif.B[WORD_W-1] &&
-                         aluif.B[WORD_W-1] != aluif.O[WORD_W-1];
-      ALU_SUB: aluif.V = aluif.A[WORD_W-1] != aluif.B[WORD_W-1] &&
-                         aluif.B[WORD_W-1] == aluif.O[WORD_W-1];
-      default: aluif.V = 0;
-    endcase
-  end
+  assign aluif.nf = aluif.out[WORD_W-1];
+  assign aluif.zf = ~|aluif.out;
+  assign aluif.vf =	((aluif.op == ALU_ADD) & (aluif.a[31] == aluif.b[31]) & (aluif.b[31] != aluif.out[31])) +
+					          ((aluif.op == ALU_SUB) & (aluif.a[31] != aluif.b[31]) & (aluif.b[31] == aluif.out[31]));
 endmodule

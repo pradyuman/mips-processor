@@ -1,85 +1,83 @@
-`include "alu_if.vh"
-`include "controller_if.vh"
 `include "cpu_types_pkg.vh"
+`include "mux_types_pkg.vh"
+`include "pc_if.vh"
 `include "datapath_cache_if.vh"
-`include "program_counter_if.vh"
 `include "register_file_if.vh"
-`include "request_proxy_if.vh"
+`include "alu_if.vh"
+`include "control_unit_if.vh"
+`include "request_unit_if.vh"
+
 import cpu_types_pkg::*;
+import mux_types_pkg::*;
 
 module datapath (
   input logic CLK, nRST,
-  datapath_cache_if.dp dpif
+  datapath_cache_if.dp dcif
 );
+
   parameter PC_INIT = 0;
 
-  /* ALU Port B Select Signals */
-  typedef enum logic [1:0] {
-    AB_EXT32, AB_RF, AB_SHAMT
-  } alu_b_ms;
+  register_file_if rfif ();
+  alu_if aluif ();
+  pc_if pcif ();
+  control_unit_if cuif ();
+  request_unit_if ruif ();
 
-  /* Register File WDAT Select Signals */
-  typedef enum logic [1:0] {
-    RFW_ALUO, RFW_IMM16, RFW_NPC, RFW_RAMDATA
-  } rf_wdat_ms;
+  register_file RF (CLK, nRST, rfif);
+  alu ALU (aluif);
+  request_unit RU (CLK, nRST, ruif);
+  control_unit CU (cuif);
+  pc #(PC_INIT) PC (CLK, nRST, pcif);
 
   logic halt;
-
-  alu_if aluif();
-  controller_if crif();
-  program_counter_if pcif();
-  register_file_if rfif();
-  request_proxy_if rpif();
-
-  alu ALU (.aluif);
-  controller CR (.aluif, .crif, .pcif);
-  program_counter #(PC_INIT) PC (.CLK, .nRST, .pcif);
-  register_file RF (.CLK, .nRST, .rfif);
-  request_proxy RP (.CLK, .nRST, .rpif);
-
   always_ff @(posedge CLK, negedge nRST)
-    if (!nRST) halt <= 0;
-    else halt <= crif.halt;
+    if(~nRST) halt <= 0;
+    else halt <= cuif.halt;
 
-  always_comb casez (crif.alu_b_sel)
-    AB_EXT32: aluif.B = crif.ext32;
-    AB_RF: aluif.B = rfif.rdat2;
-    AB_SHAMT: aluif.B = crif.shamt;
-    default: aluif.B = 0;
+  assign dcif.halt = halt;
+
+  assign dcif.imemaddr = pcif.cpc;
+  assign dcif.dmemstore = rfif.rdat2;
+
+  assign aluif.a = rfif.rdat1;
+  assign dcif.dmemaddr = aluif.out;
+
+  assign rfif.wsel = cuif. wsel;
+  assign rfif.rsel1 = cuif.rsel1;
+  assign rfif.rsel2 = cuif.rsel2;
+  assign rfif.WEN = cuif.WEN;
+
+  assign aluif.op = cuif.op;
+
+  assign pcif.rdat = rfif.rdat1;
+  assign pcif.pcEn = cuif.pcEn;
+  assign pcif.pcSel = cuif.pcSel;
+  assign pcif.immJ26 = cuif.immJ26;
+  assign pcif.ext32 = cuif.ext32;
+
+  assign cuif.zf = aluif.zf;
+  assign cuif.ins = dcif.imemload;
+  assign cuif.ihit = dcif.ihit;
+  assign cuif.dhit = dcif.dhit;
+
+  assign ruif.ihit = dcif.ihit;
+  assign ruif.dhit = dcif.dhit;
+  assign ruif.ins = dcif.imemload;
+  assign dcif.dmemWEN = ruif.dWEN;
+  assign dcif.dmemREN = ruif.dREN;
+  assign dcif.imemREN = ruif.iREN;
+
+  always_comb casez(cuif.aluBSel)
+    ALUB_RDAT: aluif.b = rfif.rdat2;
+    ALUB_EXT: aluif.b = cuif.ext32;
+    ALUB_SHAMT: aluif.b = cuif.shamt;
   endcase
 
-  always_comb casez (crif.rf_wdat_sel)
-    RFW_ALUO: rfif.wdat = aluif.O;
-    RFW_IMM16: rfif.wdat = {dpif.imemload, {16{1'b0}}};
-    RFW_NPC: rfif.wdat = pcif.val + 4;
-    RFW_RAMDATA: rfif.wdat = dpif.dmemload;
+  always_comb casez(cuif.rfInSel)
+    RFIN_LUI: rfif.wdat = word_t'({dcif.imemload[15:0], {16{1'b0}}});
+    RFIN_NPC: rfif.wdat = pcif.cpc + 4;
+    RFIN_ALU: rfif.wdat = aluif.out;
+    RFIN_RAM: rfif.wdat = dcif.dmemload;
   endcase
-
-  assign aluif.A = rfif.rdat1;
-  assign pcif.ext32 = crif.ext32;
-  assign pcif.jr_a = rfif.rdat1;
-  assign dpif.dmemaddr = aluif.O;
-  assign dpif.dmemstore = rfif.rdat2;
-  assign dpif.imemaddr = pcif.val;
-  assign dpif.halt = halt;
-
-  // Request Proxy
-  assign rpif.imemload = dpif.imemload;
-  assign rpif.ihit = dpif.ihit;
-  assign rpif.dhit = dpif.dhit;
-  assign dpif.imemREN = rpif.imemREN;
-  assign dpif.dmemREN = rpif.dmemREN;
-  assign dpif.dmemWEN = rpif.dmemWEN;
-
-  // Controller Datapath Signals
-  assign crif.ihit = dpif.ihit;
-  assign crif.imemload = dpif.imemload;
-  assign crif.dhit = dpif.dhit;
-
-  // Controller Register File Signals
-  assign rfif.rsel1 = crif.rsel1;
-  assign rfif.rsel2 = crif.rsel2;
-  assign rfif.WEN = crif.WEN;
-  assign rfif.wsel = crif.wsel;
 
 endmodule

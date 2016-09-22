@@ -1,7 +1,10 @@
 `include "cpu_types_pkg.vh"
 `include "register_file_if.vh"
 
-module register_file (input logic CLK, nRST, register_file_if.rf rfif);
+module register_file (
+  input logic CLK, nRST,
+  register_file_if.rf rfif
+);
    // 32 x 32 register
    cpu_types_pkg::word_t [31:0] register_file;
 
