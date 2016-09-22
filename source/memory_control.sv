@@ -1,20 +1,20 @@
 `include "cache_control_if.vh"
 `include "cpu_types_pkg.vh"
+
 import cpu_types_pkg::*;
 
-module memory_control #(parameter CPUS = 2) (
-  input CLK, nRST,
+module memory_control(
+  input logic CLK, nRST,
   cache_control_if.cc ccif
 );
-  assign ccif.ramREN = ccif.dREN | ccif.iREN;
-  assign ccif.ramWEN = ccif.dWEN;
+  parameter CPUS = 1;
 
-  assign ccif.ramaddr = ccif.dREN || ccif.dWEN ? ccif.daddr : ccif.iaddr;
-  assign ccif.ramstore = ccif.dstore;
-
-  assign ccif.iload = ccif.ramload;
   assign ccif.dload = ccif.ramload;
-
-  assign ccif.iwait = !(ccif.iREN && ccif.ramstate == ACCESS);
-  assign ccif.dwait = !((ccif.dREN || ccif.dWEN) && ccif.ramstate == ACCESS);
+  assign ccif.iload = ccif.ramload;
+  assign ccif.ramstore = ccif.dstore;
+  assign ccif.ramWEN = ccif.dWEN;
+  assign ccif.ramREN = ccif.iREN | ccif.dREN;
+  assign ccif.ramaddr = (ccif.dREN | ccif.dWEN) ? ccif.daddr : ccif.iaddr;
+  assign ccif.dwait = !((ccif.dREN | ccif.dWEN) & (ccif.ramstate == ACCESS));
+  assign ccif.iwait = !((ccif.ramstate == ACCESS) & ccif.iREN);
 endmodule

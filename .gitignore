@@ -2,6 +2,7 @@ work
 mapped
 fpga
 transcript
+Makefile
 modelsim.ini
 *.wlf
 README
@@ -11,4 +12,3 @@ README
 .deps
 *.hex
 *.ver
-*.summary
