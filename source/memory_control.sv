@@ -16,5 +16,5 @@ module memory_control(
   assign ccif.ramREN = ccif.iREN | ccif.dREN;
   assign ccif.ramaddr = (ccif.dREN | ccif.dWEN) ? ccif.daddr : ccif.iaddr;
   assign ccif.dwait = !((ccif.dREN | ccif.dWEN) & (ccif.ramstate == ACCESS));
-  assign ccif.iwait = !((ccif.ramstate == ACCESS) & ccif.iREN);
+  assign ccif.iwait = !((ccif.ramstate == ACCESS) & ccif.iREN) | ccif.dREN | ccif.dWEN;
 endmodule

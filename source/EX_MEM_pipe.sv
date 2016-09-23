@@ -16,7 +16,7 @@ module EX_MEM_pipe(
       xmpif.rfInSel_o <= rfInMux'(0);
       xmpif.wsel_o <= 0;
       xmpif.rfWEN_o <= 0;
-      xmpif.iREN_o <= 0;
+      xmpif.iREN_o <= 1;
       xmpif.dREN_o <= 0;
       xmpif.dWEN_o <= 0;
       xmpif.halt_o <= 0;

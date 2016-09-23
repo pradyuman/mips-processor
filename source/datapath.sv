@@ -20,7 +20,6 @@ module datapath (
   decode_unit_if duif();
   pc_if pcif();
   register_file_if rfif();
-  request_unit_if ruif();
 
   IF_ID_pipe_if fdpif();
   ID_EX_pipe_if dxpif();
@@ -28,10 +27,9 @@ module datapath (
   MEM_WB_pipe_if mwpif();
 
   alu ALU(aluif);
-  decode_unit CU(duif);
+  decode_unit DU(duif);
   pc #(PC_INIT) PC(CLK, nRST, pcif);
   register_file RF(CLK, nRST, rfif);
-  request_unit RU(CLK, nRST, ruif);
 
   IF_ID_pipe FDP(CLK, nRST, fdpif);
   ID_EX_pipe DXP(CLK, nRST, dxpif);
@@ -70,6 +68,7 @@ module datapath (
   assign dxpif.iREN_i = duif.iREN;
   assign dxpif.dREN_i = duif.dREN;
   assign dxpif.dWEN_i = duif.dWEN;
+  assign dxpif.pcSel_i = duif.pcSel;
 
   assign rfif.rsel1 = duif.rsel1;
   assign rfif.rsel2 = duif.rsel2;
@@ -91,6 +90,7 @@ module datapath (
     ALUB_SHAMT: aluif.b = dxpif.extshamt_o;
   endcase
 
+  assign xmpif.instr_i = dxpif.instr_o;
   assign xmpif.aluout_i = aluif.out;
   assign xmpif.rdat2_i = dxpif.rdat2_o;
   assign xmpif.pipe_npc_i = dxpif.pipe_npc_o;
@@ -98,7 +98,9 @@ module datapath (
   assign xmpif.iREN_i = dxpif.iREN_o;
   assign xmpif.dREN_i = dxpif.dREN_o;
   assign xmpif.dWEN_i = dxpif.dWEN_o;
-
+  assign xmpif.halt_i = dxpif.halt_o;
+  assign xmpif.rfInSel_i = dxpif.rfInSel_o;
+  assign xmpif.rfWEN_i = dxpif.rfWEN_o;
   // MEM
   assign mwpif.pipe_npc_i = xmpif.pipe_npc_o;
   assign mwpif.instr_i = xmpif.instr_o;
@@ -106,9 +108,9 @@ module datapath (
   assign mwpif.rfWEN_i = xmpif.rfWEN_o;
   assign mwpif.wsel_i = xmpif.wsel_o;
   assign mwpif.halt_i = xmpif.halt_o;
-  assign mwpif.aluout_i = xmpif.aluout_i;
+  assign mwpif.aluout_i = xmpif.aluout_o;
 
-  assign dpif.imemREN = xmpif.iREN_o;
+  assign dpif.imemREN = 1;
   assign dpif.dmemREN = xmpif.dREN_o;
   assign dpif.dmemWEN = xmpif.dWEN_o;
   assign dpif.dmemaddr = xmpif.aluout_o;

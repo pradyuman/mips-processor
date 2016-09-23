@@ -7,12 +7,14 @@ module ID_EX_pipe(
   input CLK, nRST,
   ID_EX_pipe_if.id_ex dxpif
 );
-  assign dxpif.ext32_o = { dxpif.signext_i, dxpif.instr_o[15:0] };
+  logic [15:0] signext_r;
+  assign dxpif.ext32_o = { signext_r, dxpif.instr_o[15:0] };
   assign dxpif.extshamt_o = { {27{1'b0}}, dxpif.instr_o[4:0] };
   assign dxpif.immJ26_o = dxpif.instr_o[25:0];
 
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | dxpif.flush) begin
+      signext_r <= 0;
       dxpif.instr_o <= 0;
       dxpif.pipe_npc_o <= 0;
       dxpif.rdat1_o <= 0;
@@ -29,6 +31,7 @@ module ID_EX_pipe(
       dxpif.halt_o <= 0;
     end
     else if (dxpif.EN) begin
+      signext_r <= dxpif.signext_i;
       dxpif.instr_o <= dxpif.instr_i;
       dxpif.pipe_npc_o <= dxpif.pipe_npc_i;
       dxpif.rdat1_o <= dxpif.rdat1_i;

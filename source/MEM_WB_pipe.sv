@@ -11,7 +11,7 @@ module MEM_WB_pipe(
 );
   word_t instr_r;
 
-  assign mwpif.lui32_o = { instr_r[31:16], {16{1'b0}} };
+  assign mwpif.lui32_o = { instr_r[15:0], {16{1'b0}} };
 
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | mwpif.flush) begin
