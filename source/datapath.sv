@@ -1,7 +1,7 @@
 `include "mux_types_pkg.vh"
 
 `include "alu_if.vh"
-`include "control_unit_if.vh"
+`include "decode_unit_if.vh"
 `include "datapath_cache_if.vh"
 `include "pipes_if.vh"
 `include "pc_if.vh"
@@ -17,7 +17,7 @@ module datapath (
   parameter PC_INIT = 0;
 
   alu_if aluif();
-  control_unit_if cuif();
+  decode_unit_if duif();
   pc_if pcif();
   register_file_if rfif();
   request_unit_if ruif();
@@ -26,7 +26,7 @@ module datapath (
   ID_EX_pipe_if dxpif();
 
   alu ALU(aluif);
-  control_unit CU(cuif);
+  decode_unit CU(duif);
   pc #(PC_INIT) PC(CLK, nRST, pcif);
   register_file RF(CLK, nRST, rfif);
   request_unit RU(CLK, nRST, ruif);
@@ -37,7 +37,7 @@ module datapath (
   logic halt;
   always_ff @(posedge CLK, negedge nRST)
     if(~nRST) halt <= 0;
-    else halt <= cuif.halt;
+    else halt <= duif.halt;
 
   assign dcif.halt = halt;
 
@@ -47,23 +47,23 @@ module datapath (
   assign aluif.a = rfif.rdat1;
   assign dcif.dmemaddr = aluif.out;
 
-  assign rfif.wsel = cuif. wsel;
-  assign rfif.rsel1 = cuif.rsel1;
-  assign rfif.rsel2 = cuif.rsel2;
-  assign rfif.WEN = cuif.WEN;
+  assign rfif.wsel = duif. wsel;
+  assign rfif.rsel1 = duif.rsel1;
+  assign rfif.rsel2 = duif.rsel2;
+  assign rfif.WEN = duif.WEN;
 
-  assign aluif.op = cuif.op;
+  assign aluif.op = duif.op;
 
   assign pcif.rdat = rfif.rdat1;
-  assign pcif.pcEn = cuif.pcEn;
-  assign pcif.pcSel = cuif.pcSel;
-  assign pcif.immJ26 = cuif.immJ26;
-  assign pcif.ext32 = cuif.ext32;
+  assign pcif.pcEn = duif.pcEn;
+  assign pcif.pcSel = duif.pcSel;
+  assign pcif.immJ26 = duif.immJ26;
+  assign pcif.ext32 = duif.ext32;
 
-  assign cuif.zf = aluif.zf;
-  assign cuif.ins = dcif.imemload;
-  assign cuif.ihit = dcif.ihit;
-  assign cuif.dhit = dcif.dhit;
+  assign duif.zf = aluif.zf;
+  assign duif.ins = dcif.imemload;
+  assign duif.ihit = dcif.ihit;
+  assign duif.dhit = dcif.dhit;
 
   assign ruif.ihit = dcif.ihit;
   assign ruif.dhit = dcif.dhit;
@@ -72,13 +72,13 @@ module datapath (
   assign dcif.dmemREN = ruif.dREN;
   assign dcif.imemREN = ruif.iREN;
 
-  always_comb casez(cuif.aluBSel)
+  always_comb casez(duif.aluBSel)
     ALUB_RDAT: aluif.b = rfif.rdat2;
-    ALUB_EXT: aluif.b = cuif.ext32;
-    ALUB_SHAMT: aluif.b = cuif.shamt;
+    ALUB_EXT: aluif.b = duif.ext32;
+    ALUB_SHAMT: aluif.b = duif.shamt;
   endcase
 
-  always_comb casez(cuif.rfInSel)
+  always_comb casez(duif.rfInSel)
     RFIN_LUI: rfif.wdat = word_t'({dcif.imemload[15:0], {16{1'b0}}});
     RFIN_NPC: rfif.wdat = pcif.cpc + 4;
     RFIN_ALU: rfif.wdat = aluif.out;
