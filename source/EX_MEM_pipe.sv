@@ -1,7 +1,4 @@
-`include "cpu_types_pkg.vh"
 `include "pipes_if.vh"
-
-import cpu_types_pkg::word_t;
 
 module EX_MEM_pipe(
   input CLK, nRST,

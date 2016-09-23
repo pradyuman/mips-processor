@@ -25,6 +25,7 @@ module datapath (
   IF_ID_pipe_if fdpif();
   ID_EX_pipe_if dxpif();
   EX_MEM_pipe_if xmpif();
+  MEM_WB_pipe_if mwpif();
 
   alu ALU(aluif);
   decode_unit CU(duif);
@@ -35,6 +36,7 @@ module datapath (
   IF_ID_pipe FDP(CLK, nRST, fdpif);
   ID_EX_pipe DXP(CLK, nRST, dxpif);
   EX_MEM_pipe XMP(CLK, nRST, xmpif);
+  MEM_WB_pipe MWP(CLK, nRST, mwpif);
 
   logic halt;
   always_ff @(posedge CLK, negedge nRST)

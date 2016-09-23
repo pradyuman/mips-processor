@@ -74,4 +74,25 @@ interface EX_MEM_pipe_if;
   );
 endinterface
 
+interface MEM_WB_pipe_if;
+  logic EN, flush;
+
+  word_t instr_i, npc_i, aluout_i, dmemload_i;
+  word_t lui32_o, npc_o, aluout_o, dmemload_o;
+
+  logic [1:0] rfInSel_i, rfInSel_o;
+  logic [4:0] wsel_i, wsel_o;
+
+  logic rfWEN_i, halt_i;
+  logic rfWEN_o, halt_o;
+
+  modport mem_wb (
+    input  EN, flush,
+           instr_i, npc_i, aluout_i, dmemload_i,
+           rfInSel_i, wsel_i, rfWEN_i, halt_i,
+    output lui32_o, npc_o, aluout_o, dmemload_o,
+           rfInSel_o, wsel_o, rfWEN_o, halt_o
+    );
+endinterface
+
 `endif
