@@ -12,7 +12,7 @@ import mux_types_pkg::*;
 
 module datapath (
   input logic CLK, nRST,
-  datapath_cache_if.dp dcif
+  datapath_cache_if.dp dpif
 );
   parameter PC_INIT = 0;
 
@@ -38,55 +38,94 @@ module datapath (
   EX_MEM_pipe XMP(CLK, nRST, xmpif);
   MEM_WB_pipe MWP(CLK, nRST, mwpif);
 
-  logic halt;
-  always_ff @(posedge CLK, negedge nRST)
-    if(~nRST) halt <= 0;
-    else halt <= duif.halt;
+  assign fdpif.flush = 0;
+  assign dxpif.flush = 0;
+  assign xmpif.flush = dpif.dhit;
+  assign mwpif.flush = 0;
 
-  assign dcif.halt = halt;
+  assign fdpif.EN = dpif.ihit;
+  assign dxpif.EN = dpif.ihit;
+  assign xmpif.EN = dpif.ihit;
+  assign mwpif.EN = dpif.ihit | dpif.dhit;
 
-  assign dcif.imemaddr = pcif.cpc;
-  assign dcif.dmemstore = rfif.rdat2;
+  // IF
+  assign dpif.imemaddr = pcif.cpc;
+  assign fdpif.instr_i = dpif.imemload;
+  assign fdpif.npc_i = pcif.npc;
 
-  assign aluif.a = rfif.rdat1;
-  assign dcif.dmemaddr = aluif.out;
+  // ID
+  assign duif.ins = fdpif.instr_o;
+  assign dxpif.pipe_npc_i = fdpif.pipe_npc_o;
 
-  assign rfif.wsel = duif. wsel;
+  assign dxpif.rdat1_i = rfif.rdat1;
+  assign dxpif.rdat2_i = rfif.rdat2;
+  assign dxpif.halt_i = duif.halt;
+  assign dxpif.rfWEN_i = duif.WEN;
+  assign dxpif.rfInSel_i = duif.rfInSel;
+  assign dxpif.instr_i = fdpif.instr_o;
+  assign dxpif.signext_i = duif.signext;
+  assign dxpif.aluBSel_i = duif.aluBSel;
+  assign dxpif.aluop_i = duif.op;
+  assign dxpif.wsel_i = duif.wsel;
+  assign dxpif.iREN_i = duif.iREN;
+  assign dxpif.dREN_i = duif.dREN;
+  assign dxpif.dWEN_i = duif.dWEN;
+
   assign rfif.rsel1 = duif.rsel1;
   assign rfif.rsel2 = duif.rsel2;
-  assign rfif.WEN = duif.WEN;
+  assign duif.ef = rfif.rdat1 == rfif.rdat2;
 
-  assign aluif.op = duif.op;
+  // EX
+  assign pcif.rdat = dxpif.rdat1_o;
+  assign pcif.pcEn = dpif.ihit;
+  assign pcif.pcSel = dxpif.pcSel_o;
+  assign pcif.immJ26 = dxpif.immJ26_o;
+  assign pcif.ext32 = dxpif.ext32_o;
+  assign pcif.pipe_npc = dxpif.pipe_npc_o;
 
-  assign pcif.rdat = rfif.rdat1;
-  assign pcif.pcEn = duif.pcEn;
-  assign pcif.pcSel = duif.pcSel;
-  assign pcif.immJ26 = duif.immJ26;
-  assign pcif.ext32 = duif.ext32;
-
-  assign duif.zf = aluif.zf;
-  assign duif.ins = dcif.imemload;
-  assign duif.ihit = dcif.ihit;
-  assign duif.dhit = dcif.dhit;
-
-  assign ruif.ihit = dcif.ihit;
-  assign ruif.dhit = dcif.dhit;
-  assign ruif.ins = dcif.imemload;
-  assign dcif.dmemWEN = ruif.dWEN;
-  assign dcif.dmemREN = ruif.dREN;
-  assign dcif.imemREN = ruif.iREN;
-
-  always_comb casez(duif.aluBSel)
-    ALUB_RDAT: aluif.b = rfif.rdat2;
-    ALUB_EXT: aluif.b = duif.ext32;
-    ALUB_SHAMT: aluif.b = duif.shamt;
+  assign aluif.a = dxpif.rdat1_o;
+  assign aluif.op = dxpif.aluop_o;
+  always_comb casez(dxpif.aluBSel_o)
+    ALUB_RDAT: aluif.b = dxpif.rdat2_o;
+    ALUB_EXT: aluif.b = dxpif.ext32_o;
+    ALUB_SHAMT: aluif.b = dxpif.extshamt_o;
   endcase
 
-  always_comb casez(duif.rfInSel)
-    RFIN_LUI: rfif.wdat = word_t'({dcif.imemload[15:0], {16{1'b0}}});
-    RFIN_NPC: rfif.wdat = pcif.cpc + 4;
-    RFIN_ALU: rfif.wdat = aluif.out;
-    RFIN_RAM: rfif.wdat = dcif.dmemload;
+  assign xmpif.aluout_i = aluif.out;
+  assign xmpif.rdat2_i = dxpif.rdat2_o;
+  assign xmpif.pipe_npc_i = dxpif.pipe_npc_o;
+  assign xmpif.wsel_i = dxpif.wsel_o;
+  assign xmpif.iREN_i = dxpif.iREN_o;
+  assign xmpif.dREN_i = dxpif.dREN_o;
+  assign xmpif.dWEN_i = dxpif.dWEN_o;
+
+  // MEM
+  assign mwpif.pipe_npc_i = xmpif.pipe_npc_o;
+  assign mwpif.instr_i = xmpif.instr_o;
+  assign mwpif.rfInSel_i = xmpif.rfInSel_o;
+  assign mwpif.rfWEN_i = xmpif.rfWEN_o;
+  assign mwpif.wsel_i = xmpif.wsel_o;
+  assign mwpif.halt_i = xmpif.halt_o;
+  assign mwpif.aluout_i = xmpif.aluout_i;
+
+  assign dpif.imemREN = xmpif.iREN_o;
+  assign dpif.dmemREN = xmpif.dREN_o;
+  assign dpif.dmemWEN = xmpif.dWEN_o;
+  assign dpif.dmemaddr = xmpif.aluout_o;
+  assign dpif.dmemstore = xmpif.rdat2_o;
+
+  assign mwpif.dmemload_i = dpif.dmemload;
+
+  // WB
+  assign dpif.halt = mwpif.halt_o;
+  assign rfif.wsel = mwpif.wsel_o;
+  assign rfif.WEN = mwpif.rfWEN_o;
+
+  always_comb casez(mwpif.rfInSel_o)
+    RFIN_LUI: rfif.wdat = mwpif.lui32_o;
+    RFIN_NPC: rfif.wdat = mwpif.pipe_npc_o;
+    RFIN_ALU: rfif.wdat = mwpif.aluout_o;
+    RFIN_RAM: rfif.wdat = mwpif.dmemload_o;
   endcase
 
 endmodule

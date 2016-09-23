@@ -11,16 +11,13 @@ interface pc_if;
   logic pcEn;
   logic [25:0] immJ26;
   pcMux pcSel;
-  word_t rdat, ext32, cpc;
+  word_t rdat, ext32, cpc, npc, pipe_npc;
 
   modport pc (
-    input rdat, immJ26, ext32, pcSel, pcEn,
-    output cpc
+    input rdat, immJ26, ext32, pcSel, pcEn, pipe_npc,
+    output cpc, npc
   );
 
-  modport cu (
-    output pcEn, immJ26, pcSel, ext32
-  );
 endinterface
 
 `endif

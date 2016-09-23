@@ -8,9 +8,9 @@ import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 interface decode_unit_if;
-  logic halt, WEN, ihit, dhit, zf, pcEn;
-  logic [25:0] immJ26;
-  word_t shamt, ext32, ins;
+  logic halt, WEN, ihit, dhit, ef, iREN, dREN, dWEN;
+  logic [15:0] signext;
+  word_t ins;
   aluBMux aluBSel;
   rfInMux rfInSel;
   pcMux pcSel;
@@ -18,10 +18,9 @@ interface decode_unit_if;
   regbits_t wsel, rsel1, rsel2;
 
   modport du (
-    input ins, zf, ihit, dhit,
-    output shamt, ext32, aluBSel, rfInSel, wsel,
-           rsel1, rsel2, WEN, pcEn, op, pcSel,
-           halt, immJ26
+    input ins, ef, ihit, dhit,
+    output iREN, dREN, dWEN, signext, aluBSel, rfInSel, wsel,
+           rsel1, rsel2, WEN, op, pcSel, halt
   );
 endinterface
 
