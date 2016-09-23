@@ -1,7 +1,9 @@
 `include "cpu_types_pkg.vh"
+`include "mux_types_pkg.vh"
 `include "pipes_if.vh"
 
 import cpu_types_pkg::word_t;
+import mux_types_pkg::rfInMux;
 
 module MEM_WB_pipe(
   input CLK, nRST,
@@ -17,7 +19,7 @@ module MEM_WB_pipe(
       mwpif.pipe_npc_o <= 0;
       mwpif.aluout_o <= 0;
       mwpif.dmemload_o <= 0;
-      mwpif.rfInSel_o <= 0;
+      mwpif.rfInSel_o <= rfInMux'(0);
       mwpif.wsel_o <= 0;
       mwpif.rfWEN_o <= 0;
       mwpif.halt_o <= 0;

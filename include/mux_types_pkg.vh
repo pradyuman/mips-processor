@@ -10,13 +10,13 @@ typedef enum logic [1:0] {
   PC_BR
 } pcMux;
 
-typedef enum logic [1:0]{
+typedef enum logic [1:0] {
   ALUB_RDAT,
   ALUB_EXT,
   ALUB_SHAMT
 } aluBMux;
 
-typedef enum logic [1:0]{
+typedef enum logic [1:0] {
   RFIN_LUI,
   RFIN_NPC,
   RFIN_ALU,

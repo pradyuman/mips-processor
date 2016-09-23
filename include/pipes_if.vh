@@ -2,8 +2,10 @@
 `define PIPES_IF_VH
 
 `include "cpu_types_pkg.vh"
+`include "mux_types_pkg.vh"
 
 import cpu_types_pkg::*;
+import mux_types_pkg::*;
 
 interface IF_ID_pipe_if;
   logic EN, flush;
@@ -26,12 +28,13 @@ interface ID_EX_pipe_if;
   word_t instr_i, pipe_npc_i, rdat1_i, rdat2_i;
   word_t instr_o, pipe_npc_o, rdat1_o, rdat2_o, ext32_o, extshamt_o;
 
+  aluBMux aluBSel_i, aluBSel_o;
+  rfInMux rfInSel_i, rfInSel_o;
+  pcMux pcSel_i, pcSel_o;
+  aluop_t aluop_i, aluop_o;
+
   logic [31:16] signext_i;
   logic [ADDR_W-1:0] immJ26_o;
-
-  logic [1:0] aluBSel_i, rfInSel_i, pcSel_i;
-  logic [1:0] aluBSel_o, rfInSel_o, pcSel_o;
-  logic [3:0] aluop_i, aluop_o;
   logic [4:0] wsel_i, wsel_o;
 
   logic rfWEN_i, iREN_i, dREN_i, dWEN_i, halt_i;
@@ -57,7 +60,7 @@ interface EX_MEM_pipe_if;
   word_t instr_i, pipe_npc_i, aluout_i, rdat2_i;
   word_t instr_o, pipe_npc_o, aluout_o, rdat2_o;
 
-  logic [1:0] rfInSel_i, rfInSel_o;
+  rfInMux rfInSel_i, rfInSel_o;
   logic [4:0] wsel_i, wsel_o;
 
   logic rfWEN_i, iREN_i, dREN_i, dWEN_i, halt_i;
@@ -80,7 +83,7 @@ interface MEM_WB_pipe_if;
   word_t instr_i, pipe_npc_i, aluout_i, dmemload_i;
   word_t lui32_o, pipe_npc_o, aluout_o, dmemload_o;
 
-  logic [1:0] rfInSel_i, rfInSel_o;
+  rfInMux rfInSel_i, rfInSel_o;
   logic [4:0] wsel_i, wsel_o;
 
   logic rfWEN_i, halt_i;

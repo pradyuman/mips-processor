@@ -1,4 +1,7 @@
+`include "mux_types_pkg.vh"
 `include "pipes_if.vh"
+
+import mux_types_pkg::rfInMux;
 
 module EX_MEM_pipe(
   input CLK, nRST,
@@ -10,7 +13,7 @@ module EX_MEM_pipe(
       xmpif.pipe_npc_o <= 0;
       xmpif.aluout_o <= 0;
       xmpif.rdat2_o <= 0;
-      xmpif.rfInSel_o <= 0;
+      xmpif.rfInSel_o <= rfInMux'(0);
       xmpif.wsel_o <= 0;
       xmpif.rfWEN_o <= 0;
       xmpif.iREN_o <= 0;
