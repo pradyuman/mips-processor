@@ -7,7 +7,7 @@ module memory_control(
   input logic CLK, nRST,
   cache_control_if.cc ccif
 );
-  parameter CPUS = 1;
+  parameter CPUS = 2;
 
   assign ccif.dload = ccif.ramload;
   assign ccif.iload = ccif.ramload;

@@ -3,8 +3,7 @@ module pipeline (
   output logic halt,
   cpu_ram_if.cpu scif
 );
-
-parameter PC0 = 0;
+  parameter PC0 = 0;
 
   datapath_cache_if         dcif ();
   caches_if                 cif0();
