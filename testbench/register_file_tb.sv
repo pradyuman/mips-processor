@@ -1,90 +1,95 @@
-/*
-  Eric Villasenor
-  evillase@gmail.com
-
-  register file test bench
-*/
-
-// mapped needs this
+`include "cpu_types_pkg.vh"
 `include "register_file_if.vh"
-
-// mapped timing needs this. 1ns is too fast
 `timescale 1 ns / 1 ns
+import cpu_types_pkg::word_t;
 
 module register_file_tb;
-
   parameter PERIOD = 10;
-
+  parameter RFILE_SIZE = 32;
   logic CLK = 0, nRST;
 
-  // test vars
-  //int v1 = 1;
-  //int v2 = 4721;
-  //int v3 = 25119;
-
-  // clock
   always #(PERIOD/2) CLK++;
 
-  // interface
-  register_file_if rfif ();
+  register_file_if rfif();
+  register_file DUT(.CLK, .nRST, .rfif);
 
-  // DUT
-`ifndef MAPPED
-  register_file DUT(CLK, nRST, rfif);
-`else
-  register_file DUT(
-    .\rfif.rdat2 (rfif.rdat2),
-    .\rfif.rdat1 (rfif.rdat1),
-    .\rfif.wdat (rfif.wdat),
-    .\rfif.rsel2 (rfif.rsel2),
-    .\rfif.rsel1 (rfif.rsel1),
-    .\rfif.wsel (rfif.wsel),
-    .\rfif.WEN (rfif.WEN),
-    .\nRST (nRST),
-    .\CLK (CLK)
-  );
-`endif
+  initial begin
+    // Error vector
+    enum { resetFile, resetRead, write } e;
+    static integer errors[3] = '{default:0};
 
-integer i;
+    // Test nRST
+    reset();
+    testInternalFile('{default:0}, errors[resetFile]);
+    resolve("Internal Register File after reset", errors[resetFile]);
 
-initial
-begin
-	#(PERIOD/2)
-	nRST = 1;
-	#(PERIOD/2)
-	nRST = 0;
-	#(PERIOD/2)
-	nRST = 1;
-	for(i = 0; i < 32; i=i+1) begin
-		//assert(DUT.register[i] == '0) $display("nRST for reg %d passed\n", i);
-		//else $display("nRST for reg %d failed\n", i);
-	end
-	
-	@(negedge CLK)
-	rfif.wsel = 0;
-	rfif.WEN = 1;
-	rfif.rsel1 = 0;
-	rfif.rsel2 = 0;
-	for(i = 0; i < 10; i=i+1) begin
-		@(negedge CLK)
-		rfif.wdat = $random();
-		#(PERIOD)
-		assert(rfif.rdat1 == 0 && rfif.rdat2 == 0) $display("Reg 0 read %d passed\n", i);
-		else $display("Reg 0 read %d failed\n", i);
-	end
+    testRead('{default:0}, errors[resetRead]);
+    resolve("READ after reset.", errors[resetRead]);
 
-	for(i = 1; i < 32; i=i+1) begin
-		@(negedge CLK)
-		rfif.wsel = i;
-		rfif.WEN = 1;
-		rfif.wdat = i;
-		rfif.rsel1 = i;
-		rfif.rsel2 = i;
-		#(PERIOD)
-		assert(rfif.rdat1 == i && rfif.rdat2 == i) $display("Reg %d write/read passed\n", i);
-		else $display("Reg %d write/read failed\n" , i);
-	end
-	$finish;
-end
+    // Test Read/Write
+    testWrite('{default:0}, errors[write]);
+    resolve("Read/Write with random test cases.", errors[write]);
 
+    $display("TOTAL ERRORS: %0d", errors.sum());
+    $finish;
+  end // initial begin
+
+  // Reset Register File
+  task reset;
+    nRST = 1'b1; #PERIOD;
+    nRST = 1'b0; #PERIOD;
+    nRST = 1'b1; #PERIOD;
+  endtask // testInternalFile
+
+  task writeRandomValues(word_t [RFILE_SIZE:0] testData);
+  endtask // writeRandomValues
+
+  // Test Internal Register Memory on Reset
+  task automatic testInternalFile(word_t [RFILE_SIZE:0] testData, ref integer e);
+    foreach (testData[,i])
+      assert(DUT.register_file[i] == testData[i]) else begin
+        $display("ERROR: DUT.register_file[%0d] (%0d) != testData[%0d] (%0d)",
+                 i, DUT.register_file[i], i, testData[i]);
+        e++;
+      end
+  endtask // testInternalFile
+
+  // Test RDAT
+  task automatic testRead(word_t [RFILE_SIZE:0] testData, ref integer e);
+    foreach (testData[,i]) begin
+      rfif.rsel1 = i;
+      rfif.rsel2 = i;
+      #PERIOD
+        assert(rfif.rdat1 == testData[i]) else begin
+          $display("ERROR: rfif.rdat1[%0d] (%0d) != testData[%0d] (%0d)",
+                   i, rfif.rdat1, i, testData[i]);
+          e++;
+        end
+      assert(rfif.rdat2 == testData[i]) else begin
+        $display("ERROR: rfif.rdat2[%0d] (%0d) != testData[%0d] (%0d)",
+                 i, rfif.rdat2, i, testData[i]);
+        e++;
+      end
+    end
+  endtask // testRead
+
+  // Populate Register File
+  task automatic testWrite(word_t [RFILE_SIZE:0] testData, ref integer e);
+    std::randomize(testData);
+    rfif.WEN = 1'b1;
+    foreach (testData[,i]) begin
+      rfif.wsel = i;
+      rfif.wdat = testData[i];
+      #PERIOD;
+    end
+    rfif.WEN = 1'b0;
+
+    testData[0] = 0;
+    testRead(testData, e);
+  endtask // testWrite
+
+  task resolve(string message, integer e);
+    if (!e) $display("SUCCESS: %s", message);
+    else $display("FAILURE: %s - %0d errors", message, e);
+  endtask
 endmodule
