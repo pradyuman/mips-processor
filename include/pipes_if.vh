@@ -8,11 +8,11 @@ import cpu_types_pkg::*;
 interface IF_ID_pipe_if;
   logic EN, flush;
   word_t instr_i, npc_i;
-  word_t instr_o, npc_o;
+  word_t instr_o, pipe_npc_o;
 
   modport if_id (
     input EN, flush, instr_i, npc_i,
-    output instr_o, npc_o
+    output instr_o, pipe_npc_o
   );
 
   modport du (
@@ -23,8 +23,8 @@ endinterface
 interface ID_EX_pipe_if;
   logic EN, flush;
 
-  word_t instr_i, npc_i, rdat1_i, rdat2_i;
-  word_t instr_o, npc_o, rdat1_o, rdat2_o, ext32_o, extshamt_o;
+  word_t instr_i, pipe_npc_i, rdat1_i, rdat2_i;
+  word_t instr_o, pipe_npc_o, rdat1_o, rdat2_o, ext32_o, extshamt_o;
 
   logic [31:16] signext_i;
   logic [ADDR_W-1:0] immJ26_o;
@@ -39,11 +39,11 @@ interface ID_EX_pipe_if;
 
   modport id_ex (
     input EN, flush,
-          instr_i, npc_i, rdat1_i, rdat2_i,
+          instr_i, pipe_npc_i, rdat1_i, rdat2_i,
           aluBSel_i, aluop_i, pcSel_i, wsel_i,
           signext_i, rfInSel_i, rfWEN_i,
           iREN_i, dREN_i, dWEN_i, halt_i,
-    output instr_o, npc_o, rdat1_o, rdat2_o,
+    output instr_o, pipe_npc_o, rdat1_o, rdat2_o,
            aluBSel_o, aluop_o, pcSel_o, wsel_o,
            ext32_o, extshamt_o, immJ26_o,
            rfInSel_o, rfWEN_o,
@@ -54,8 +54,8 @@ endinterface
 interface EX_MEM_pipe_if;
   logic EN, flush;
 
-  word_t instr_i, npc_i, aluout_i, rdat2_i;
-  word_t instr_o, npc_o, aluout_o, rdat2_o;
+  word_t instr_i, pipe_npc_i, aluout_i, rdat2_i;
+  word_t instr_o, pipe_npc_o, aluout_o, rdat2_o;
 
   logic [1:0] rfInSel_i, rfInSel_o;
   logic [4:0] wsel_i, wsel_o;
@@ -65,10 +65,10 @@ interface EX_MEM_pipe_if;
 
   modport ex_mem (
     input EN, flush,
-          instr_i, npc_i, aluout_i, rdat2_i,
+          instr_i, pipe_npc_i, aluout_i, rdat2_i,
           rfInSel_i, wsel_i,
           rfWEN_i, iREN_i, dREN_i, dWEN_i, halt_i,
-    output instr_o, npc_o, aluout_o, rdat2_o,
+    output instr_o, pipe_npc_o, aluout_o, rdat2_o,
            rfInSel_o, wsel_o,
            rfWEN_o, iREN_o, dREN_o, dWEN_o, halt_o
   );
@@ -77,8 +77,8 @@ endinterface
 interface MEM_WB_pipe_if;
   logic EN, flush;
 
-  word_t instr_i, npc_i, aluout_i, dmemload_i;
-  word_t lui32_o, npc_o, aluout_o, dmemload_o;
+  word_t instr_i, pipe_npc_i, aluout_i, dmemload_i;
+  word_t lui32_o, pipe_npc_o, aluout_o, dmemload_o;
 
   logic [1:0] rfInSel_i, rfInSel_o;
   logic [4:0] wsel_i, wsel_o;
@@ -88,9 +88,9 @@ interface MEM_WB_pipe_if;
 
   modport mem_wb (
     input  EN, flush,
-           instr_i, npc_i, aluout_i, dmemload_i,
+           instr_i, pipe_npc_i, aluout_i, dmemload_i,
            rfInSel_i, wsel_i, rfWEN_i, halt_i,
-    output lui32_o, npc_o, aluout_o, dmemload_o,
+    output lui32_o, pipe_npc_o, aluout_o, dmemload_o,
            rfInSel_o, wsel_o, rfWEN_o, halt_o
     );
 endinterface

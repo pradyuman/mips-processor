@@ -7,7 +7,7 @@ module EX_MEM_pipe(
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | xmpif.flush) begin
       xmpif.instr_o <= 0;
-      xmpif.npc_o <= 0;
+      xmpif.pipe_npc_o <= 0;
       xmpif.aluout_o <= 0;
       xmpif.rdat2_o <= 0;
       xmpif.rfInSel_o <= 0;
@@ -20,7 +20,7 @@ module EX_MEM_pipe(
     end
     else if (xmpif.EN) begin
       xmpif.instr_o <= xmpif.instr_i;
-      xmpif.npc_o <= xmpif.npc_i;
+      xmpif.pipe_npc_o <= xmpif.pipe_npc_i;
       xmpif.aluout_o <= xmpif.aluout_i;
       xmpif.rdat2_o <= xmpif.rdat2_i;
       xmpif.rfInSel_o <= xmpif.rfInSel_i;

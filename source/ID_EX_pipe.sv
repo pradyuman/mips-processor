@@ -11,7 +11,7 @@ module ID_EX_pipe(
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | dxpif.flush) begin
       dxpif.instr_o <= 0;
-      dxpif.npc_o <= 0;
+      dxpif.pipe_npc_o <= 0;
       dxpif.rdat1_o <= 0;
       dxpif.rdat2_o <= 0;
       dxpif.aluBSel_o <= 0;
@@ -27,7 +27,7 @@ module ID_EX_pipe(
     end
     else if (dxpif.EN) begin
       dxpif.instr_o <= dxpif.instr_i;
-      dxpif.npc_o <= dxpif.npc_i;
+      dxpif.pipe_npc_o <= dxpif.pipe_npc_i;
       dxpif.rdat1_o <= dxpif.rdat1_i;
       dxpif.rdat2_o <= dxpif.rdat2_i;
       dxpif.aluBSel_o <= dxpif.aluBSel_i;

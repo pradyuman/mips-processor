@@ -7,10 +7,10 @@ module IF_ID_pipe(
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | fdpif.flush) begin
       fdpif.instr_o <= 0;
-      fdpif.npc_o <= 0;
+      fdpif.pipe_npc_o <= 0;
     end
     else if (fdpif.EN) begin
       fdpif.instr_o <= fdpif.instr_i;
-      fdpif.npc_o <= fdpif.npc_i;
+      fdpif.pipe_npc_o <= fdpif.npc_i;
     end
 endmodule;

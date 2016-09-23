@@ -14,7 +14,7 @@ module MEM_WB_pipe(
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | mwpif.flush) begin
       instr_r <= 0;
-      mwpif.npc_o <= 0;
+      mwpif.pipe_npc_o <= 0;
       mwpif.aluout_o <= 0;
       mwpif.dmemload_o <= 0;
       mwpif.rfInSel_o <= 0;
@@ -24,7 +24,7 @@ module MEM_WB_pipe(
     end
     else if (mwpif.EN) begin
       instr_r <= mwpif.instr_i;
-      mwpif.npc_o <= mwpif.npc_i;
+      mwpif.pipe_npc_o <= mwpif.pipe_npc_i;
       mwpif.aluout_o <= mwpif.aluout_i;
       mwpif.dmemload_o <= mwpif.dmemload_i;
       mwpif.rfInSel_o <= mwpif.rfInSel_i;
