@@ -61,7 +61,6 @@ interface caches_if;
             iREN, iaddr
   );
 
-
 endinterface
 
 `endif //CACHES_IF_VH

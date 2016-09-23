@@ -6,10 +6,9 @@
 import cpu_types_pkg::*;
 
 interface alu_if;
-
+	aluop_t op;
 	word_t a, b, out;
 	logic vf, zf, nf;
-	aluop_t op;
 
 	modport alu (
 		input a, b, op,
@@ -25,7 +24,6 @@ interface alu_if;
     input zf,
     output op
   );
-
 endinterface
 
 `endif

@@ -16,7 +16,7 @@ interface pc_if;
   modport pc (
     input rdat, immJ26, ext32, pcSel, pcEn,
     output cpc
-    );
+  );
 
   modport cu (
     output pcEn, immJ26, pcSel, ext32

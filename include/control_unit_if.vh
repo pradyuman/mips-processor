@@ -19,9 +19,10 @@ interface control_unit_if;
 
   modport cu (
     input ins, zf, ihit, dhit,
-    output shamt, ext32, aluBSel, rfInSel, wsel, rsel1, rsel2, WEN, pcEn, op, pcSel, halt, immJ26
+    output shamt, ext32, aluBSel, rfInSel, wsel,
+           rsel1, rsel2, WEN, pcEn, op, pcSel,
+           halt, immJ26
   );
-
 endinterface
 
 `endif

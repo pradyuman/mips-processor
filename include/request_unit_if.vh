@@ -8,7 +8,6 @@ import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 interface request_unit_if;
-
   logic ihit, dhit,dREN, dWEN, iREN;
   word_t ins;
 
@@ -16,7 +15,6 @@ interface request_unit_if;
     input ihit, dhit, ins,
     output dWEN, dREN, iREN
   );
-
 endinterface
 
 `endif

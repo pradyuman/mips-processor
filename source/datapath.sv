@@ -1,33 +1,38 @@
-`include "cpu_types_pkg.vh"
 `include "mux_types_pkg.vh"
-`include "pc_if.vh"
-`include "datapath_cache_if.vh"
-`include "register_file_if.vh"
+
 `include "alu_if.vh"
 `include "control_unit_if.vh"
+`include "datapath_cache_if.vh"
+`include "pipes_if.vh"
+`include "pc_if.vh"
+`include "register_file_if.vh"
 `include "request_unit_if.vh"
 
-import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 module datapath (
   input logic CLK, nRST,
   datapath_cache_if.dp dcif
 );
-
   parameter PC_INIT = 0;
 
-  register_file_if rfif ();
-  alu_if aluif ();
-  pc_if pcif ();
-  control_unit_if cuif ();
-  request_unit_if ruif ();
+  alu_if aluif();
+  control_unit_if cuif();
+  pc_if pcif();
+  register_file_if rfif();
+  request_unit_if ruif();
 
-  register_file RF (CLK, nRST, rfif);
-  alu ALU (aluif);
-  request_unit RU (CLK, nRST, ruif);
-  control_unit CU (cuif);
-  pc #(PC_INIT) PC (CLK, nRST, pcif);
+  IF_ID_pipe_if fdpif();
+  ID_EX_pipe_if dxpif();
+
+  alu ALU(aluif);
+  control_unit CU(cuif);
+  pc #(PC_INIT) PC(CLK, nRST, pcif);
+  register_file RF(CLK, nRST, rfif);
+  request_unit RU(CLK, nRST, ruif);
+
+  IF_ID_pipe FDP(CLK, nRST, fdpif);
+  ID_EX_pipe DXP(CLK, nRST, dxpif);
 
   logic halt;
   always_ff @(posedge CLK, negedge nRST)
