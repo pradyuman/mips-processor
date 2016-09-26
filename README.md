@@ -1,3 +1,3 @@
-# Single Cycle Diagram
+# Pipeline Diagram
 
-![Single Cycle Diagram](source/singlecycle.png?raw=true "Single Cycle Diagram")
+![Pipeline Diagram](source/pipeline.png?raw=true "Pipeline Diagram")
