@@ -13,4 +13,4 @@ module IF_ID_pipe(
       fdpif.instr_o <= fdpif.instr_i;
       fdpif.pipe_npc_o <= fdpif.npc_i;
     end
-endmodule;
+endmodule

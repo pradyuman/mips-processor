@@ -6,9 +6,21 @@ import mux_types_pkg::rfInMux;
 module EX_MEM_pipe(
   input CLK, nRST,
   EX_MEM_pipe_if.ex_mem xmpif
-);
+  );
   always_ff @(posedge CLK, negedge nRST)
-    if (!nRST | xmpif.flush) begin
+    if (!nRST) begin
+      xmpif.instr_o <= 0;
+      xmpif.pipe_npc_o <= 0;
+      xmpif.aluout_o <= 0;
+      xmpif.rdat2_o <= 0;
+      xmpif.rfInSel_o <= rfInMux'(0);
+      xmpif.wsel_o <= 0;
+      xmpif.rfWEN_o <= 0;
+      xmpif.dREN_o <= 0;
+      xmpif.dWEN_o <= 0;
+      xmpif.halt_o <= 0;
+    end
+    else if (xmpif.flush) begin
       xmpif.instr_o <= 0;
       xmpif.pipe_npc_o <= 0;
       xmpif.aluout_o <= 0;

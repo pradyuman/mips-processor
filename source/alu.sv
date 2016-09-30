@@ -13,7 +13,7 @@ module alu (alu_if.alu aluif);
     ALU_NOR:  aluif.out = ~(aluif.a | aluif.b);
     ALU_SLT:  aluif.out = $signed(aluif.a) < $signed(aluif.b);
     ALU_SLTU: aluif.out = aluif.a < aluif.b;
-    default:  aluif.out = 32'hBAD_C0DE;
+    default:  aluif.out = 32'hBADC0DE;
   endcase
 
   assign aluif.nf = aluif.out[WORD_W-1];

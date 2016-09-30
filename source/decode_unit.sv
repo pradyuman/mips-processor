@@ -16,7 +16,7 @@ module decode_unit(decode_unit_if.du duif);
   assign ins = opcode_t'(duif.ins[31:26]);
   assign func = funct_t'(duif.ins[5:0]);
 
-  assign duif.iREN = !(duif.dREN | duif.dWEN);
+  assign duif.immJ26 = duif.ins[25:0];
 
   always_comb begin
     duif.dREN = 0;

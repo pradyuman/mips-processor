@@ -9,7 +9,7 @@ module ID_EX_pipe(
 );
   logic sign_r;
   assign dxpif.ext32_o = { {16{sign_r}}, dxpif.instr_o[15:0] };
-  assign dxpif.extshamt_o = { {27{1'b0}}, dxpif.instr_o[4:0] };
+  assign dxpif.extshamt_o = { {27{1'b0}}, dxpif.instr_o[10:6] };
 
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | dxpif.flush) begin

@@ -94,17 +94,17 @@ module datapath (
 
   // EX
   always_comb casez(dxpif.aluBSel_o)
-    ALUB_RDAT: alubT = dxpif.rdat2_o;
-    ALUB_EXT: alubT = dxpif.ext32_o;
-    ALUB_SHAMT: alubT = dxpif.extshamt_o;
+    ALUB_RDAT: aluif.b = alubT;
+    ALUB_EXT: aluif.b = dxpif.ext32_o;
+    ALUB_SHAMT: aluif.b = dxpif.extshamt_o;
   endcase
   always_comb casez(fuif.aSel_f)
     STD: aluif.a = dxpif.rdat1_o;
     FWD: aluif.a = fuif.rdat1_f;
   endcase
   always_comb casez(fuif.bSel_f)
-    STD: aluif.b = alubT;
-    FWD: aluif.b = fuif.rdat2_f;
+    STD: alubT = dxpif.rdat2_o;
+    FWD: alubT = fuif.rdat2_f;
   endcase
   assign aluif.op = dxpif.aluop_o;
 
@@ -132,7 +132,10 @@ module datapath (
   assign dpif.dmemREN = xmpif.dREN_o;
   assign dpif.dmemWEN = xmpif.dWEN_o;
   assign dpif.dmemaddr = xmpif.aluout_o;
-  assign dpif.dmemstore = xmpif.rdat2_o;
+  always_comb casez(fuif.dstrSel_f)
+    STD: dpif.dmemstore = xmpif.rdat2_o;
+    FWD: dpif.dmemstore = fuif.dmem_f;
+  endcase
 
   assign mwpif.dmemload_i = dpif.dmemload;
 
@@ -149,9 +152,9 @@ module datapath (
   endcase
 
   // FU
-  assign fuif.ex_reg = dxpif.instr_o[25:16];
-  assign fuif.mem_reg = xmpif.instr_o[25:16];
-  assign fuif.wb_reg = mwpif.instr_o[25:16];
+  assign fuif.ex_reg = dxpif.instr_o[31:16];
+  assign fuif.mem_reg = xmpif.instr_o[31:16];
+  assign fuif.wb_reg = mwpif.instr_o[31:16];
   assign fuif.ex_rfWEN = dxpif.rfWEN_o;
   assign fuif.mem_rfWEN = xmpif.rfWEN_o;
   assign fuif.wb_rfWEN = mwpif.rfWEN_o;
@@ -161,6 +164,9 @@ module datapath (
   assign fuif.ex_aluout = aluif.out;
   assign fuif.mem_aluout = xmpif.aluout_o;
   assign fuif.wb_aluout = mwpif.aluout_o;
+  assign fuif.mem_lui32 = {xmpif.instr_o[15:0], {16{1'b0}}};
+  assign fuif.wb_lui32 = mwpif.lui32_o;
+
 
  // HU
   assign huif.ihit = dpif.ihit;
