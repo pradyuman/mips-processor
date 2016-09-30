@@ -23,6 +23,11 @@ typedef enum logic [1:0] {
   RFIN_RAM
 } rfInMux;
 
+typedef enum logic {
+  STD,
+  FWD
+} fwdMux;
+
 endpackage
 
 `endif
