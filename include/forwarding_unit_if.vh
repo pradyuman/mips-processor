@@ -2,8 +2,10 @@
 `define FORWARDING_UNIT_IF_VH
 
 `include "cpu_types_pkg.vh"
+`include "mux_types_pkg.vh"
 
-import cpu_types_pkg::*;
+import cpu_types_pkg::word_t;
+import mux_types_pkg::fwdMux;
 
 interface forwarding_unit_if;
   logic [25:11] ex_reg, mem_reg, wb_reg;
@@ -14,7 +16,7 @@ interface forwarding_unit_if;
   modport fu (
     input  ex_reg, mem_reg, wb_reg,
            ex_rfWEN, mem_rfWEN, wb_rfWEN,
-           aluout
+           aluout,
     output alubr_f, brSel_f, aSel_f, bSel_f
   );
 
