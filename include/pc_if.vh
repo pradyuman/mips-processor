@@ -14,7 +14,7 @@ interface pc_if;
   word_t rdat, ext32, cpc, npc, pipe_npc;
 
   modport pc (
-    input rdat, immJ26, ext32, pcSel, pcEn, pipe_npc,
+    input rdat, immJ26, ext32, pcSel, pcEN, pipe_npc,
     output cpc, npc
   );
 
