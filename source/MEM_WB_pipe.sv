@@ -9,13 +9,11 @@ module MEM_WB_pipe(
   input CLK, nRST,
   MEM_WB_pipe_if.mem_wb mwpif
 );
-  word_t instr_r;
-
-  assign mwpif.lui32_o = { instr_r[15:0], {16{1'b0}} };
+  assign mwpif.lui32_o = { mwpif.instr_o[15:0], {16{1'b0}} };
 
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST | mwpif.flush) begin
-      instr_r <= 0;
+      mwpif.instr_o <= 0;
       mwpif.pipe_npc_o <= 0;
       mwpif.aluout_o <= 0;
       mwpif.dmemload_o <= 0;
@@ -25,7 +23,7 @@ module MEM_WB_pipe(
       mwpif.halt_o <= 0;
     end
     else if (mwpif.EN) begin
-      instr_r <= mwpif.instr_i;
+      mwpif.instr_o <= mwpif.instr_i;
       mwpif.pipe_npc_o <= mwpif.pipe_npc_i;
       mwpif.aluout_o <= mwpif.aluout_i;
       mwpif.dmemload_o <= mwpif.dmemload_i;

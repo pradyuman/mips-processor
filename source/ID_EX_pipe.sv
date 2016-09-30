@@ -20,7 +20,6 @@ module ID_EX_pipe(
       dxpif.rdat2_o <= 0;
       dxpif.aluBSel_o <= aluBMux'(0);
       dxpif.aluop_o <= aluop_t'(0);
-      dxpif.pcSel_o <= pcMux'(0);
       dxpif.wsel_o <= 0;
       dxpif.rfInSel_o <= rfInMux'(0);
       dxpif.rfWEN_o <= 0;

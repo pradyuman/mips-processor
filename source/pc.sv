@@ -14,7 +14,7 @@ module pc(
 
   always_ff @(posedge CLK, negedge nRST)
     if (~nRST) pcif.cpc <= PC_INIT;
-    else if (pcif.pcEn) pcif.cpc <= next_pc;
+    else if (pcif.pcEN) pcif.cpc <= next_pc;
 
   pcMux muxPc;
   assign muxPc = pcif.pcSel;

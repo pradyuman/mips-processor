@@ -8,7 +8,7 @@ import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 interface pc_if;
-  logic pcEn;
+  logic pcEN;
   logic [25:0] immJ26;
   pcMux pcSel;
   word_t rdat, ext32, cpc, npc, pipe_npc;
