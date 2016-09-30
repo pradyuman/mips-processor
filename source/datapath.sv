@@ -44,7 +44,7 @@ module datapath (
 
   word_t alubT;
 
-  assign fdpif.flush = duif.pcSel != PC_NPC;
+  assign fdpif.flush = dpif.ihit && duif.pcSel != PC_NPC;
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
