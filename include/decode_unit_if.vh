@@ -11,7 +11,6 @@ interface decode_unit_if;
   logic WEN, iREN, dREN, dWEN;
   logic sign, ef, halt;
   logic [25:0] immJ26;
-  logic [15:0] signext;
   word_t ins;
   aluBMux aluBSel;
   rfInMux rfInSel;
@@ -23,7 +22,7 @@ interface decode_unit_if;
     input ins, ef,
     output WEN, iREN, dREN, dWEN,
            aluBSel, rfInSel, pcSel, wsel,
-           rsel1, rsel2, signext, immJ26,
+           rsel1, rsel2, sign, immJ26,
            op, halt
   );
 endinterface

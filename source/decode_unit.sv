@@ -12,12 +12,9 @@ import mux_types_pkg::*;
 module decode_unit(decode_unit_if.du duif);
   opcode_t ins;
   funct_t func;
-  logic [15:0] zeroExt, signExt;
 
   assign ins = opcode_t'(duif.ins[31:26]);
   assign func = funct_t'(duif.ins[5:0]);
-  assign zeroExt = 16'b0;
-  assign signExt = {16{duif.ins[15]}};
 
   assign duif.iREN = !(duif.dREN | duif.dWEN);
 
@@ -28,7 +25,7 @@ module decode_unit(decode_unit_if.du duif);
     duif.rsel1 = regbits_t'(duif.ins[25:21]);
     duif.rsel2 = regbits_t'('x);
     duif.wsel = regbits_t'(duif.ins[20:16]);
-    duif.signext = signExt;
+    duif.sign = duif.ins[15];
     duif.aluBSel = ALUB_EXT;
     duif.rfInSel = RFIN_ALU;
 
@@ -41,7 +38,7 @@ module decode_unit(decode_unit_if.du duif);
     casez(duif.ins[31:26])
       RTYPE: begin
         duif.aluBSel = ALUB_RDAT;
-        duif.signext = word_t'('x);
+        duif.sign = 'x;
         duif.rsel2 = regbits_t'(duif.ins[20:16]);
         duif.wsel = regbits_t'(duif.ins[15:11]);
         casez(duif.ins[5:0])
@@ -76,7 +73,7 @@ module decode_unit(decode_unit_if.du duif);
         duif.pcSel = PC_JUMP;
         duif.aluBSel = aluBMux'('x);
         duif.rfInSel = rfInMux'('x);
-        duif.signext = word_t'('x);
+        duif.sign = 'x;
         duif.wsel = regbits_t'('x);
         duif.rsel1 = regbits_t'('x);
       end
@@ -86,7 +83,7 @@ module decode_unit(decode_unit_if.du duif);
         duif.wsel = 31;
         duif.rsel1 = regbits_t'('x);
         duif.aluBSel = aluBMux'('x);
-        duif.signext = word_t'('x);
+        duif.sign = 'x;
       end
       BEQ: begin
         duif.WEN = 0;
@@ -107,15 +104,15 @@ module decode_unit(decode_unit_if.du duif);
       SLTIU: duif.op = ALU_SLTU;
       ANDI: begin
         duif.op = ALU_AND;
-        duif.signext = zeroExt;
+        duif.sign = 0;
       end
       ORI: begin
         duif.op = ALU_OR;
-        duif.signext = zeroExt;
+        duif.sign = 0;
       end
       XORI: begin
         duif.op = ALU_XOR;
-        duif.signext = zeroExt;
+        duif.sign = 0;
       end
       LUI: begin
         duif.rfInSel = RFIN_LUI;

@@ -79,6 +79,7 @@ module datapath (
   assign rfif.rsel1 = duif.rsel1;
   assign rfif.rsel2 = duif.rsel2;
   assign duif.ef = rfif.rdat1 == rfif.rdat2;
+
   // PC
   assign pcif.pcSel = duif.pcSel;
   assign pcif.pipe_npc = fdpif.pipe_npc_o;
@@ -146,6 +147,7 @@ module datapath (
     RFIN_ALU: rfif.wdat = mwpif.aluout_o;
     RFIN_RAM: rfif.wdat = mwpif.dmemload_o;
   endcase
+
   // FU
   assign fuif.ex_reg = dxpif.instr_o[25:16];
   assign fuif.mem_reg = xmpif.instr_o[25:16];
@@ -159,7 +161,9 @@ module datapath (
   assign fuif.ex_aluout = aluif.out;
   assign fuif.mem_aluout = xmpif.aluout_o;
   assign fuif.wb_aluout = mwpif.aluout_o;
-  // HU
+
+ // HU
+  assign huif.ihit = dpif.ihit;
   assign huif.dec_instr = fdpif.instr_o;
   assign huif.ex_instr = dxpif.instr_o;
   assign huif.mem_instr = xmpif.instr_o;

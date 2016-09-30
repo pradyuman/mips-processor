@@ -6,11 +6,11 @@
 import cpu_types_pkg::word_t;
 
 interface hazard_unit_if;
-  logic fdEN, pcEN, dx_flush;
+  logic ihit, fdEN, pcEN, dx_flush;
   word_t dec_instr, ex_instr, mem_instr;
 
   modport hu (
-    input  dec_instr, ex_instr, mem_instr,
+    input  ihit, dec_instr, ex_instr, mem_instr,
     output fdEN, pcEN, dx_flush
   );
 
