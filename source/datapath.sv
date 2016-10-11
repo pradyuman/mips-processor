@@ -55,7 +55,7 @@ module datapath (
   assign mwpif.EN = dpif.ihit | dpif.dhit | huif.dx_flush;
 
   // IF
-  assign dpif.imemaddr = pcif.val;
+  assign dpif.imemaddr = pcif.cpc << 2;
   assign fdpif.instr_i = dpif.imemload;
   assign fdpif.npc_i = pcif.npc;
 
