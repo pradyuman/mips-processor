@@ -160,14 +160,18 @@ module datapath (
   assign fuif.ex_reg = dxpif.instr_o[31:16];
   assign fuif.mem_reg = xmpif.instr_o[31:16];
   assign fuif.wb_reg = mwpif.instr_o[31:16];
+
   assign fuif.ex_rfWEN = dxpif.rfWEN_o;
   assign fuif.mem_rfWEN = xmpif.rfWEN_o;
   assign fuif.wb_rfWEN = mwpif.rfWEN_o;
+
   assign fuif.ex_dest = dxpif.wsel_o;
   assign fuif.mem_dest = xmpif.wsel_o;
   assign fuif.wb_dest = mwpif.wsel_o;
+
   assign fuif.mem_aluout = xmpif.aluout_o;
   assign fuif.wb_aluout = mwpif.aluout_o;
+
   assign fuif.mem_lui32 = {xmpif.instr_o[15:0], {16{1'b0}}};
   assign fuif.wb_lui32 = mwpif.lui32_o;
 
@@ -176,6 +180,11 @@ module datapath (
   assign huif.dec_reg = fdpif.instr_o;
   assign huif.ex_reg = dxpif.instr_o;
   assign huif.mem_reg = xmpif.instr_o;
+
+  assign huif.ex_rfWEN = dxpif.rfWEN_o;
   assign huif.mem_rfWEN = xmpif.rfWEN_o;
+
+  assign huif.ex_dest = dxpif.wsel_o;
+  assign huif.mem_dest = xmpif.wsel_o;
 
 endmodule
