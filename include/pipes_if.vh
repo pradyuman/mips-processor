@@ -9,8 +9,8 @@ import mux_types_pkg::*;
 
 interface IF_ID_pipe_if;
   logic EN, flush;
-  word_t instr_i, npc_i;
-  word_t instr_o, pipe_npc_o;
+  word_t instr_i, instr_o;
+  logic [31:2] npc_i, pipe_npc_o;
 
   modport if_id (
     input EN, flush, instr_i, npc_i,
@@ -24,9 +24,10 @@ endinterface
 
 interface ID_EX_pipe_if;
   logic EN, flush;
+  logic [31:2] pipe_npc_i, pipe_npc_o;
 
-  word_t instr_i, pipe_npc_i, rdat1_i, rdat2_i;
-  word_t instr_o, pipe_npc_o, rdat1_o, rdat2_o, ext32_o, extshamt_o;
+  word_t instr_i, rdat1_i, rdat2_i;
+  word_t instr_o, rdat1_o, rdat2_o, ext32_o, extshamt_o;
 
   aluBMux aluBSel_i, aluBSel_o;
   rfInMux rfInSel_i, rfInSel_o;
@@ -54,9 +55,10 @@ endinterface
 
 interface EX_MEM_pipe_if;
   logic EN, flush;
+  logic [31:2] pipe_npc_i, pipe_npc_o;
 
-  word_t instr_i, pipe_npc_i, aluout_i, rdat2_i;
-  word_t instr_o, pipe_npc_o, aluout_o, rdat2_o;
+  word_t instr_i, aluout_i, rdat2_i;
+  word_t instr_o, aluout_o, rdat2_o;
 
   rfInMux rfInSel_i, rfInSel_o;
   regbits_t wsel_i, wsel_o;
@@ -77,9 +79,10 @@ endinterface
 
 interface MEM_WB_pipe_if;
   logic EN, flush;
+  logic [31:2] pipe_npc_i, pipe_npc_o;
 
-  word_t instr_i, pipe_npc_i, aluout_i, dmemload_i;
-  word_t instr_o, pipe_npc_o, aluout_o, dmemload_o, lui32_o;
+  word_t instr_i, aluout_i, dmemload_i;
+  word_t instr_o, aluout_o, dmemload_o, lui32_o;
 
   rfInMux rfInSel_i, rfInSel_o;
   regbits_t wsel_i, wsel_o;

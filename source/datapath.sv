@@ -55,7 +55,7 @@ module datapath (
   assign mwpif.EN = dpif.ihit | dpif.dhit;
 
   // IF
-  assign dpif.imemaddr = pcif.cpc;
+  assign dpif.imemaddr = pcif.val;
   assign fdpif.instr_i = dpif.imemload;
   assign fdpif.npc_i = pcif.npc;
 
@@ -89,11 +89,11 @@ module datapath (
   assign pcif.pcSel = duif.pcSel;
   assign pcif.pipe_npc = fdpif.pipe_npc_o;
   assign pcif.immJ26 = duif.immJ26;
-  assign pcif.ext32 = {{16{duif.sign}}, fdpif.instr_o[15:0]};
+  assign pcif.ext30 = {{14{duif.sign}}, fdpif.instr_o[15:0]};
   assign pcif.pcEN = huif.pcEN;
   always_comb casez(fuif.rsBrSel_f)
-    STD: pcif.rdat = rfif.rdat1;
-    FWD: pcif.rdat = fuif.regbr_f;
+    STD: pcif.rdat = rfif.rdat1[31:2];
+    FWD: pcif.rdat = fuif.regbr_f[31:2];
   endcase
 
   // EX
@@ -150,7 +150,7 @@ module datapath (
 
   always_comb casez(mwpif.rfInSel_o)
     RFIN_LUI: rfif.wdat = mwpif.lui32_o;
-    RFIN_NPC: rfif.wdat = mwpif.pipe_npc_o;
+    RFIN_NPC: rfif.wdat = {mwpif.pipe_npc_o, 2'b0};
     RFIN_ALU: rfif.wdat = mwpif.aluout_o;
     RFIN_RAM: rfif.wdat = mwpif.dmemload_o;
   endcase

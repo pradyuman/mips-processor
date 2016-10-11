@@ -11,11 +11,14 @@ interface pc_if;
   logic pcEN;
   logic [25:0] immJ26;
   pcMux pcSel;
-  word_t rdat, ext32, cpc, npc, pipe_npc;
+  logic [31:2] rdat, ext30, cpc, npc, pipe_npc;
+  word_t val;
+
+  assign val = {cpc, 2'b0};
 
   modport pc (
-    input rdat, immJ26, ext32, pcSel, pcEN, pipe_npc,
-    output cpc, npc
+    input rdat, immJ26, ext30, pcSel, pcEN, pipe_npc,
+    output val, cpc, npc
   );
 
 endinterface

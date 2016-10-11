@@ -31,5 +31,4 @@ module hazard_unit(hazard_unit_if.hu huif);
       huif.dx_flush = huif.ihit;
     end
   end
-
 endmodule
