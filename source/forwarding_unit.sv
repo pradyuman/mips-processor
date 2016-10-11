@@ -16,6 +16,7 @@ module forwarding_unit(forwarding_unit_if.fu fuif);
   assign mem_rs = fuif.mem_reg[25:21];
   assign mem_rt = fuif.mem_reg[20:16];
 
+  // R-Type Data Hazard Forwarding (rs)
   assign mem_op = opcode_t'(fuif.mem_reg[31:26]);
   assign wb_op = opcode_t'(fuif.wb_reg[31:26]);
   always_comb begin
@@ -27,44 +28,42 @@ module forwarding_unit(forwarding_unit_if.fu fuif);
     end
     else if (fuif.wb_rfWEN && fuif.wb_dest != 0 && fuif.wb_dest == ex_rs) begin
       fuif.aSel_f = FWD;
-      fuif.rdat1_f = wb_op == LUI ? fuif.wb_lui32 : fuif.wb_aluout;
+      fuif.rdat1_f = fuif.wb_rfwdat;
     end
   end
 
+  // R-Type Data Hazard Forwarding (rt)
   assign ex_op = opcode_t'(fuif.ex_reg[31:26]);
   always_comb begin
     fuif.bSel_f = STD;
     fuif.rdat2_f = 'x;
-    if ((fuif.mem_rfWEN && ex_op != SW) && fuif.mem_dest != 0 && fuif.mem_dest == ex_rt) begin
+    if (fuif.mem_rfWEN && fuif.mem_dest != 0 && fuif.mem_dest == ex_rt) begin
       fuif.bSel_f = FWD;
       fuif.rdat2_f = fuif.mem_aluout;
     end
-    else if ((fuif.wb_rfWEN && ex_op != SW) && fuif.wb_dest != 0 && fuif.wb_dest == ex_rt) begin
+    else if (fuif.wb_rfWEN && fuif.wb_dest != 0 && fuif.wb_dest == ex_rt) begin
       fuif.bSel_f = FWD;
-      fuif.rdat2_f = fuif.wb_aluout;
+      fuif.rdat2_f = fuif.wb_rfwdat;
     end
   end
 
-  assign fuif.dmem_f = fuif.wb_aluout;
+  // Write Back Forward to MEM
+  assign fuif.dmem_f = fuif.wb_rfwdat;
   always_comb
-    if (ex_op == SW && fuif.wb_dest != 0 && fuif.wb_dest == mem_rt)
+    if (mem_op == SW && fuif.wb_dest != 0 && fuif.wb_dest == mem_rt)
       fuif.dstrSel_f = FWD;
     else
       fuif.dstrSel_f = STD;
 
   assign dec_op = opcode_t'(fuif.dec_reg[31:26]);
-  assign branchop = dec_op == BEQ || dec_op == BNE;
+  assign branchop = dec_op == BEQ | dec_op == BNE;
+  assign fuif.regbr_f = fuif.mem_aluout;
   always_comb begin
     fuif.rsBrSel_f = STD;
     fuif.rtBrSel_f = STD;
-    fuif.regbr_f = 'x;
-    if (branchop && fuif.mem_dest != 0 && fuif.mem_dest == dec_rs) begin
+    if (branchop && fuif.mem_dest != 0 && fuif.mem_dest == dec_rs)
       fuif.rsBrSel_f = FWD;
-      fuif.regbr_f = mem_rs;
-    end
-    else if (branchop && fuif.mem_dest != 0 && fuif.mem_dest == dec_rt) begin
+    else if (branchop && fuif.mem_dest != 0 && fuif.mem_dest == dec_rt)
       fuif.rtBrSel_f = FWD;
-      fuif.regbr_f = mem_rt;
-    end
   end
 endmodule
