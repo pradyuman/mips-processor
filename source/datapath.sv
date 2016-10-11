@@ -78,7 +78,12 @@ module datapath (
 
   assign rfif.rsel1 = duif.rsel1;
   assign rfif.rsel2 = duif.rsel2;
-  assign duif.ef = rfif.rdat1 == rfif.rdat2;
+
+  always_comb casez({fuif.rsBrSel_f, fuif.rtBrSel_f})
+    2'b10: duif.ef = fuif.regbr_f == rfif.rdat2;
+    2'b01: duif.ef = fuif.regbr_f == rfif.rdat1;
+    default: duif.ef = rfif.rdat1 == rfif.rdat2;
+  endcase
 
   // PC
   assign pcif.pcSel = duif.pcSel;
@@ -86,11 +91,10 @@ module datapath (
   assign pcif.immJ26 = duif.immJ26;
   assign pcif.ext32 = {{16{duif.sign}}, fdpif.instr_o[15:0]};
   assign pcif.pcEN = huif.pcEN;
-  always_comb casez(fuif.brSel_f)
+  always_comb casez(fuif.rsBrSel_f)
     STD: pcif.rdat = rfif.rdat1;
-    FWD: pcif.rdat = fuif.alubr_f;
+    FWD: pcif.rdat = fuif.regbr_f;
   endcase
-
 
   // EX
   always_comb casez(dxpif.aluBSel_o)
@@ -139,7 +143,7 @@ module datapath (
 
   assign mwpif.dmemload_i = dpif.dmemload;
 
-  // WB
+  // MEM/WB Registers
   assign dpif.halt = mwpif.halt_o;
   assign rfif.wsel = mwpif.wsel_o;
   assign rfif.WEN = mwpif.rfWEN_o;
@@ -151,7 +155,8 @@ module datapath (
     RFIN_RAM: rfif.wdat = mwpif.dmemload_o;
   endcase
 
-  // FU
+  // Forwarding Unit
+  assign fuif.dec_reg = fdpif.instr_o[31:16];
   assign fuif.ex_reg = dxpif.instr_o[31:16];
   assign fuif.mem_reg = xmpif.instr_o[31:16];
   assign fuif.wb_reg = mwpif.instr_o[31:16];
@@ -161,17 +166,16 @@ module datapath (
   assign fuif.ex_dest = dxpif.wsel_o;
   assign fuif.mem_dest = xmpif.wsel_o;
   assign fuif.wb_dest = mwpif.wsel_o;
-  assign fuif.ex_aluout = aluif.out;
   assign fuif.mem_aluout = xmpif.aluout_o;
   assign fuif.wb_aluout = mwpif.aluout_o;
   assign fuif.mem_lui32 = {xmpif.instr_o[15:0], {16{1'b0}}};
   assign fuif.wb_lui32 = mwpif.lui32_o;
 
-
- // HU
+  // Hazard Unit
   assign huif.ihit = dpif.ihit;
-  assign huif.dec_instr = fdpif.instr_o;
-  assign huif.ex_instr = dxpif.instr_o;
-  assign huif.mem_instr = xmpif.instr_o;
+  assign huif.dec_reg = fdpif.instr_o;
+  assign huif.ex_reg = dxpif.instr_o;
+  assign huif.mem_reg = xmpif.instr_o;
+  assign huif.mem_rfWEN = xmpif.rfWEN_o;
 
 endmodule

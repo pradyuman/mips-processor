@@ -5,7 +5,11 @@ module IF_ID_pipe(
   IF_ID_pipe_if.if_id fdpif
 );
   always_ff @(posedge CLK, negedge nRST)
-    if (!nRST | fdpif.flush) begin
+    if (!nRST) begin
+      fdpif.instr_o <= 0;
+      fdpif.pipe_npc_o <= 0;
+    end
+    else if (fdpif.flush) begin
       fdpif.instr_o <= 0;
       fdpif.pipe_npc_o <= 0;
     end

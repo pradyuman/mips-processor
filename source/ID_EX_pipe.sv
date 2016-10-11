@@ -12,7 +12,22 @@ module ID_EX_pipe(
   assign dxpif.extshamt_o = { {27{1'b0}}, dxpif.instr_o[10:6] };
 
   always_ff @(posedge CLK, negedge nRST)
-    if (!nRST | dxpif.flush) begin
+    if (!nRST) begin
+      sign_r <= 0;
+      dxpif.instr_o <= 0;
+      dxpif.pipe_npc_o <= 0;
+      dxpif.rdat1_o <= 0;
+      dxpif.rdat2_o <= 0;
+      dxpif.aluBSel_o <= aluBMux'(0);
+      dxpif.aluop_o <= aluop_t'(0);
+      dxpif.wsel_o <= 0;
+      dxpif.rfInSel_o <= rfInMux'(0);
+      dxpif.rfWEN_o <= 0;
+      dxpif.dREN_o <= 0;
+      dxpif.dWEN_o <= 0;
+      dxpif.halt_o <= 0;
+    end
+    else if (dxpif.flush) begin
       sign_r <= 0;
       dxpif.instr_o <= 0;
       dxpif.pipe_npc_o <= 0;

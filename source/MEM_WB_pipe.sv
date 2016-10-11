@@ -12,7 +12,17 @@ module MEM_WB_pipe(
   assign mwpif.lui32_o = { mwpif.instr_o[15:0], {16{1'b0}} };
 
   always_ff @(posedge CLK, negedge nRST)
-    if (!nRST | mwpif.flush) begin
+    if (!nRST) begin
+      mwpif.instr_o <= 0;
+      mwpif.pipe_npc_o <= 0;
+      mwpif.aluout_o <= 0;
+      mwpif.dmemload_o <= 0;
+      mwpif.rfInSel_o <= rfInMux'(0);
+      mwpif.wsel_o <= 0;
+      mwpif.rfWEN_o <= 0;
+      mwpif.halt_o <= 0;
+    end
+    else if (mwpif.flush) begin
       mwpif.instr_o <= 0;
       mwpif.pipe_npc_o <= 0;
       mwpif.aluout_o <= 0;
