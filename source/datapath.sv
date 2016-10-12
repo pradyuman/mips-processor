@@ -44,6 +44,11 @@ module datapath (
 
   word_t alubT;
 
+  reg         halt;
+
+  always_ff @(posedge CLK, negedge nRST)
+    if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
+
   assign fdpif.flush = dpif.ihit && duif.pcSel != PC_NPC;
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
@@ -144,7 +149,7 @@ module datapath (
   assign mwpif.dmemload_i = dpif.dmemload;
 
   // MEM/WB Registers
-  assign dpif.halt = mwpif.halt_o;
+  assign dpif.halt = halt;
   assign rfif.wsel = mwpif.wsel_o;
   assign rfif.WEN = mwpif.rfWEN_o;
 
