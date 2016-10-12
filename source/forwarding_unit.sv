@@ -47,7 +47,9 @@ module forwarding_unit(forwarding_unit_if.fu fuif);
     end
   end
 
-  // Write Back Forward to MEM
+  // LW/SW Data Hazard Forwarding ()
+
+  // Write Back Forward to MEM (rs)
   assign fuif.dmem_f = fuif.wb_rfwdat;
   always_comb
     if (mem_op == SW && fuif.wb_dest != 0 && fuif.wb_dest == mem_rt)
@@ -55,6 +57,7 @@ module forwarding_unit(forwarding_unit_if.fu fuif);
     else
       fuif.dstrSel_f = STD;
 
+  // Branch Data Hazard Forwarding
   assign dec_op = opcode_t'(fuif.dec_reg[31:26]);
   assign branchop = dec_op == BEQ | dec_op == BNE;
   assign fuif.regbr_f = fuif.mem_aluout;

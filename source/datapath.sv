@@ -49,7 +49,7 @@ module datapath (
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
 
-  assign fdpif.EN = huif.fdEN;
+  assign fdpif.EN = dpif.ihit && !huif.dx_flush;
   assign dxpif.EN = dpif.ihit;
   assign xmpif.EN = dpif.ihit | huif.dx_flush;
   assign mwpif.EN = dpif.ihit | dpif.dhit | huif.dx_flush;
@@ -86,11 +86,11 @@ module datapath (
   endcase
 
   // PC
+  assign pcif.pcEN = dpif.ihit && !huif.dx_flush;
   assign pcif.pcSel = duif.pcSel;
   assign pcif.pipe_npc = fdpif.pipe_npc_o;
   assign pcif.immJ26 = duif.immJ26;
   assign pcif.ext30 = {{14{duif.sign}}, fdpif.instr_o[15:0]};
-  assign pcif.pcEN = huif.pcEN;
   always_comb casez(fuif.rsBrSel_f)
     STD: pcif.rdat = rfif.rdat1[31:2];
     FWD: pcif.rdat = fuif.regbr_f[31:2];
@@ -114,7 +114,7 @@ module datapath (
 
   assign xmpif.instr_i = dxpif.instr_o;
   assign xmpif.aluout_i = aluif.out;
-  assign xmpif.rdat2_i = dxpif.rdat2_o;
+  assign xmpif.rdat2_i = alubT;
   assign xmpif.pipe_npc_i = dxpif.pipe_npc_o;
   assign xmpif.wsel_i = dxpif.wsel_o;
   assign xmpif.dREN_i = dxpif.dREN_o;
@@ -176,7 +176,6 @@ module datapath (
   assign fuif.wb_lui32 = mwpif.lui32_o;
 
   // Hazard Unit
-  assign huif.ihit = dpif.ihit;
   assign huif.dec_reg = fdpif.instr_o[31:16];
   assign huif.ex_reg = dxpif.instr_o[31:16];
   assign huif.mem_reg = xmpif.instr_o[31:16];

@@ -14,21 +14,13 @@ module hazard_unit(hazard_unit_if.hu huif);
 
   assign dec_op = opcode_t'(huif.dec_reg[31:26]);
   assign ex_op = opcode_t'(huif.ex_reg[31:26]);
+  assign mem_op = opcode_t'(huif.mem_reg[31:26]);
   always_comb begin
-    huif.hhit = 0;
-    huif.fdEN = huif.ihit;
-    huif.pcEN = huif.ihit;
     huif.dx_flush = 0;
-    if (ex_op == LW) begin
-      huif.fdEN = 0;
-      huif.pcEN = 0;
+    if (ex_op == LW || ex_op == SW)
       huif.dx_flush = 1;
-    end
     else if ((dec_op == BEQ | dec_op == BNE) && huif.ex_rfWEN &&
-             (huif.ex_dest == dec_rs | huif.ex_dest == dec_rt)) begin
-      huif.fdEN = 0;
-      huif.pcEN = 0;
+             (huif.ex_dest == dec_rs | huif.ex_dest == dec_rt))
       huif.dx_flush = 1;
-    end
   end
 endmodule
