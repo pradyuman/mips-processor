@@ -44,7 +44,7 @@ module datapath (
 
   word_t alubT;
 
-  reg         halt;
+  logic halt;
 
   always_ff @(posedge CLK, negedge nRST)
     if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
