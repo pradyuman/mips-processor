@@ -8,7 +8,7 @@ module system (input logic CLK, nRST, system_if.sys syif);
   logic [3:0] count;
 
   cpu_ram_if                            prif ();
-  pipeline    #(.PC0('h0))              CPU (CLK, nRST, halt, prif);
+  pipeline    #(.PC0('h0))              CPU (CPUCLK, nRST, halt, prif);
   ram                                   RAM (CLK, nRST, prif);
 
   always_ff @(posedge CLK, negedge nRST) begin
