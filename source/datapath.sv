@@ -49,7 +49,7 @@ module datapath (
   always_ff @(posedge CLK, negedge nRST)
     if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
 
-  assign fdpif.flush = dpif.ihit && duif.pcSel != PC_NPC;
+  assign fdpif.flush = dpif.ihit && (duif.pcSel != PC_NPC && !huif.dx_flush);
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
@@ -184,6 +184,10 @@ module datapath (
   assign huif.dec_reg = fdpif.instr_o[31:16];
   assign huif.ex_reg = dxpif.instr_o[31:16];
   assign huif.mem_reg = xmpif.instr_o[31:16];
+
+  assign huif.ihit = dpif.ihit;
+
+
 
   assign huif.ex_rfWEN = dxpif.rfWEN_o;
   assign huif.mem_rfWEN = xmpif.rfWEN_o;

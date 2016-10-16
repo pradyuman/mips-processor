@@ -17,7 +17,7 @@ module hazard_unit(hazard_unit_if.hu huif);
   assign mem_op = opcode_t'(huif.mem_reg[31:26]);
   always_comb begin
     huif.dx_flush = 0;
-    if (ex_op == LW || ex_op == SW)
+    if ((ex_op == LW || ex_op == SW))
       huif.dx_flush = 1;
     else if ((dec_op == BEQ | dec_op == BNE) && huif.ex_rfWEN &&
              (huif.ex_dest == dec_rs | huif.ex_dest == dec_rt))
