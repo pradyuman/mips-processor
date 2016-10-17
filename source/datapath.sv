@@ -36,11 +36,12 @@ module datapath (
   MEM_WB_pipe_if mwpif();
 
   alu ALU(aluif);
+  branch_predictor BP(CLK, nRST, bpif);
   decode_unit DU(duif);
   pc #(PC_INIT) PC(CLK, nRST, pcif);
   register_file RF(CLK, nRST, rfif);
-  forwarding_unit FU (fuif);
-  hazard_unit HU (huif);
+  forwarding_unit FU(fuif);
+  hazard_unit HU(huif);
 
   IF_ID_pipe FDP(CLK, nRST, fdpif);
   ID_EX_pipe DXP(CLK, nRST, dxpif);
