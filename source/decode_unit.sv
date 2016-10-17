@@ -22,17 +22,15 @@ module decode_unit(decode_unit_if.du duif);
     duif.dREN = 0;
     duif.dWEN = 0;
     duif.WEN = 1;
+    duif.bf = 0;
     duif.rsel1 = regbits_t'(duif.ins[25:21]);
     duif.rsel2 = regbits_t'('x);
     duif.wsel = regbits_t'(duif.ins[20:16]);
     duif.sign = duif.ins[15];
     duif.aluBSel = ALUB_EXT;
     duif.rfInSel = RFIN_ALU;
-
     duif.op = aluop_t'('x);
-
     duif.pcSel = PC_NPC;
-
     duif.halt = 0;
 
     casez(duif.ins[31:26])
@@ -87,6 +85,7 @@ module decode_unit(decode_unit_if.du duif);
       end
       BEQ: begin
         duif.WEN = 0;
+        duif.bf = 1;
         duif.rsel2 = regbits_t'(duif.ins[20:16]);
         duif.aluBSel = ALUB_RDAT;
         duif.pcSel = duif.ef ? PC_BR : PC_NPC;
@@ -94,6 +93,7 @@ module decode_unit(decode_unit_if.du duif);
       end
       BNE: begin
         duif.WEN = 0;
+        duif.bf = 1;
         duif.rsel2 = regbits_t'(duif.ins[20:16]);
         duif.aluBSel = ALUB_RDAT;
         duif.pcSel = duif.ef ? PC_NPC : PC_BR;

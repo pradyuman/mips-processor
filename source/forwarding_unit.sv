@@ -47,8 +47,6 @@ module forwarding_unit(forwarding_unit_if.fu fuif);
     end
   end
 
-  // LW/SW Data Hazard Forwarding ()
-
   // Write Back Forward to MEM (rs)
   assign fuif.dmem_f = fuif.wb_rfwdat;
   always_comb

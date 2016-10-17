@@ -20,7 +20,7 @@ module datapath (
   parameter PC_INIT = 0;
 
   word_t alubT;
-  logic halt;
+  logic bpflush, predictStatus, halt;
 
   alu_if aluif();
   branch_predictor_if bpif();
@@ -52,7 +52,7 @@ module datapath (
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
 
-  assign bpflush = fdpif.phit_o && fdpif.bp_ao != bpif.br_a;
+  assign bpflush = fdpif.phit_o && fdpif.bp_ao != pcif.next_pc;
   assign fdpif.flush = dpif.ihit && !huif.dx_flush && ((duif.pcSel != PC_NPC && !fdpif.phit_o) | bpflush);
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
@@ -64,30 +64,34 @@ module datapath (
   assign mwpif.EN = dpif.ihit | dpif.dhit | huif.dx_flush;
 
   // Branch Predictor
-  assign bpif.br_a = {{14{duif.sign}}, fdpif.instr_o[15:0]} + fdpif.pipe_npc_o;
+  assign bpif.br_a = pcif.next_pc;
   assign bpif.cpc = pcif.cpc;
+  assign bpif.npc = pcif.npc;
   assign bpif.tag = fdpif.pipe_npc_o - 1'b1;
   assign bpif.pcSel = duif.pcSel;
+  assign bpif.upEN = duif.bf;
 
   // PC
   assign pcif.pcEN = dpif.ihit && !huif.dx_flush;
   assign pcif.pcSel = duif.pcSel;
   assign pcif.bpSel = bpif.phit;
+  assign pcif.bpFlush = bpflush;
   assign pcif.bp_a = bpif.addr;
-  assign pcif.br_a = bpif.br_a;
+  assign pcif.br_a =  {{14{duif.sign}}, fdpif.instr_o[15:0]} + fdpif.pipe_npc_o;
   assign pcif.immJ26 = duif.immJ26;
   assign pcif.pipe_npc = fdpif.pipe_npc_o;
+  assign pcif.pdStatus = bpflush;
+  assign pcif.rpc = bpif.rpc;
   always_comb casez(fuif.rsBrSel_f)
     STD: pcif.rdat = rfif.rdat1[31:2];
     FWD: pcif.rdat = fuif.regbr_f[31:2];
   endcase
 
   // IF
-  assign dpif.imemaddr = bpif.addr << 2;
+  assign dpif.imemaddr = pcif.cpc << 2;
   assign fdpif.bp_ai = bpif.addr;
   assign fdpif.instr_i = dpif.imemload;
   assign fdpif.phit_i = bpif.phit;
-  assign fdpif.cpc_i = pcif.cpc;
   assign fdpif.npc_i = pcif.npc;
 
   // ID

@@ -6,13 +6,13 @@
 import mux_types_pkg::pcMux;
 
 interface branch_predictor_if;
-  logic phit;
-  logic [29:0] br_a, cpc, tag, addr;
+  logic upEN, phit;
+  logic [29:0] br_a, cpc, npc, rpc, tag, addr;
   pcMux pcSel;
 
   modport bp (
-    input br_a, cpc, tag, pcSel,
-    output addr, phit
+    input upEN, br_a, cpc, npc, tag, pcSel,
+    output addr, rpc, phit
   );
 
 endinterface

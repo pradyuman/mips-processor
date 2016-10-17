@@ -9,7 +9,7 @@ import mux_types_pkg::*;
 
 interface decode_unit_if;
   logic WEN, dREN, dWEN;
-  logic sign, ef, halt;
+  logic sign, bf, ef, halt;
   logic [25:0] immJ26;
   word_t ins;
   aluBMux aluBSel;
@@ -23,7 +23,7 @@ interface decode_unit_if;
     output WEN, dREN, dWEN,
            aluBSel, rfInSel, pcSel, wsel,
            rsel1, rsel2, sign, immJ26,
-           op, halt
+           bf, op, halt
   );
 endinterface
 
