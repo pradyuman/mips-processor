@@ -7,8 +7,7 @@ import mux_types_pkg::pcMux;
 
 interface branch_predictor_if;
   logic phit;
-  logic [29:0] br_a, cpc, addr;
-  logic [27:0] tag;
+  logic [29:0] br_a, cpc, tag, addr;
   pcMux pcSel;
 
   modport bp (

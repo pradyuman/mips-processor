@@ -26,9 +26,9 @@ module branch_predictor (
   assign bpif.phit = isValid & isHit;
   assign bpif.addr = (pd_taken & bpif.phit) ? buff[idx][29:0] : bpif.cpc;
 
-  assign up_idx = bpif.br_a[1:0];
+  assign up_idx = bpif.tag[1:0];
   always_comb begin
     n_buff = buff;
-    n_buff[up_idx] = bpif.pcSel == PC_BR ? { 1'b1, bpif.tag - 1, bpif.br_a[29:2] } : buff[idx];
+    if (bpif.pcSel == PC_BR) n_buff[up_idx] = { 1'b1, bpif.tag[29:2], bpif.br_a[29:0] };
   end
 endmodule

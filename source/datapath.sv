@@ -50,10 +50,10 @@ module datapath (
 
   assign dpif.halt = halt;
   always_ff @(posedge CLK, negedge nRST)
-    if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
+    if (!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
 
-  assign bpflush = duif.pcSel == PC_BR && fdpif.bp_ao != bpif.br_a;
-  assign fdpif.flush = dpif.ihit && ((duif.pcSel != PC_NPC && !fdpif.phit_o && !huif.dx_flush) | bpflush);
+  assign bpflush = fdpif.phit_o && fdpif.bp_ao != bpif.br_a;
+  assign fdpif.flush = dpif.ihit && !huif.dx_flush && ((duif.pcSel != PC_NPC && !fdpif.phit_o) | bpflush);
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
@@ -66,7 +66,7 @@ module datapath (
   // Branch Predictor
   assign bpif.br_a = {{14{duif.sign}}, fdpif.instr_o[15:0]} + fdpif.pipe_npc_o;
   assign bpif.cpc = pcif.cpc;
-  assign bpif.tag = fdpif.pipe_npc_o;
+  assign bpif.tag = fdpif.pipe_npc_o - 1'b1;
   assign bpif.pcSel = duif.pcSel;
 
   // PC
@@ -87,6 +87,7 @@ module datapath (
   assign fdpif.bp_ai = bpif.addr;
   assign fdpif.instr_i = dpif.imemload;
   assign fdpif.phit_i = bpif.phit;
+  assign fdpif.cpc_i = pcif.cpc;
   assign fdpif.npc_i = pcif.npc;
 
   // ID
