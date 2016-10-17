@@ -1,18 +1,20 @@
-`ifndef BTB_IF_VH
-`define BTB_IF_VH
+`ifndef BRANCH_PREDICTOR_IF_VH
+`define BRANCH_PREDICTOR_IF_VH
 
-interface btb_if;
-  logic [29:0] brAddr, pcCpc, brPc, cpc;
+`include "mux_types_pkg.vh"
+
+import mux_types_pkg::pcMux;
+
+interface branch_predictor_if;
+  logic phit;
+  logic [29:0] br_a, cpc, addr;
   logic [27:0] tag;
-  logic flush;
-  predMux predSel;
   pcMux pcSel;
 
   modport bp (
-    input brAddr, pcCpc, tag, pcSel;
-    output cpc, flush
+    input br_a, cpc, tag, pcSel,
+    output addr, phit
   );
-  
 
 endinterface
 `endif

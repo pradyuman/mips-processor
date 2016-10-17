@@ -14,17 +14,15 @@ module pc(
 
   always_ff @(posedge CLK, negedge nRST)
     if (~nRST) pcif.cpc <= PC_INIT;
-    else if (pcif.pcEN) pcif.cpc <= next_pc;
+    else if (pcif.pcEN) pcif.cpc <= pcif.bpSel ? pcif.bp_a : next_pc;
 
-  pcMux muxPc;
-  assign muxPc = pcif.pcSel;
   assign pcif.npc = pcif.cpc + 1;
 
-  always_comb case(muxPc)
+  always_comb case(pcif.pcSel)
     PC_NPC: next_pc = pcif.npc;
     PC_JR: next_pc = pcif.rdat;
     PC_JUMP: next_pc =  {{pcif.pipe_npc[31:28]}, {pcif.immJ26}};
-    PC_BR: next_pc = pcif.ext30 + pcif.pipe_npc;
+    PC_BR: next_pc = pcif.br_a;
   endcase
 
 endmodule

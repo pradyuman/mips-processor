@@ -28,11 +28,6 @@ typedef enum logic {
   FWD
 } fwdMux;
 
-typedef enum logic {
-  OPC,
-  PPC
-} predMux;
-
 endpackage
 
 `endif

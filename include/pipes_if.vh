@@ -8,13 +8,14 @@ import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 interface IF_ID_pipe_if;
-  logic EN, flush;
+  logic EN, flush, phit_i, phit_o;
+  logic [29:0] bp_ai, bp_ao;
   word_t instr_i, instr_o;
   logic [31:2] npc_i, pipe_npc_o;
 
   modport if_id (
-    input EN, flush, instr_i, npc_i,
-    output instr_o, pipe_npc_o
+    input EN, flush, bp_ai, instr_i, phit_i, npc_i,
+    output bp_ao, instr_o, phit_o, pipe_npc_o
   );
 
   modport du (

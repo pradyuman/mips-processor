@@ -8,13 +8,15 @@ import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 interface pc_if;
-  logic pcEN;
-  logic [25:0] immJ26;
   pcMux pcSel;
+  logic pcEN, bpSel;
+  logic [25:0] immJ26;
+  logic [29:0] br_a, bp_a;
   logic [31:2] rdat, ext30, cpc, npc, pipe_npc;
 
   modport pc (
-    input rdat, immJ26, ext30, pcSel, pcEN, pipe_npc,
+    input pcSel, pcEN, bpSel,
+          pipe_npc, rdat, immJ26, ext30, br_a, bp_a,
     output cpc, npc
   );
 

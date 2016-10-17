@@ -1,6 +1,7 @@
 `include "mux_types_pkg.vh"
 
 `include "alu_if.vh"
+`include "branch_predictor_if.vh"
 `include "decode_unit_if.vh"
 `include "datapath_cache_if.vh"
 `include "forwarding_unit_if.vh"
@@ -18,7 +19,11 @@ module datapath (
 );
   parameter PC_INIT = 0;
 
+  word_t alubT;
+  logic halt;
+
   alu_if aluif();
+  branch_predictor_if bpif();
   decode_unit_if duif();
   forwarding_unit_if fuif();
   hazard_unit_if huif();
@@ -42,14 +47,12 @@ module datapath (
   EX_MEM_pipe XMP(CLK, nRST, xmpif);
   MEM_WB_pipe MWP(CLK, nRST, mwpif);
 
-  word_t alubT;
-
-  logic halt;
-
+  assign dpif.halt = halt;
   always_ff @(posedge CLK, negedge nRST)
     if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
 
-  assign fdpif.flush = dpif.ihit && (duif.pcSel != PC_NPC && !huif.dx_flush);
+  assign bpflush = duif.pcSel == PC_BR && fdpif.bp_ao != bpif.br_a;
+  assign fdpif.flush = dpif.ihit && ((duif.pcSel != PC_NPC && !fdpif.phit_o && !huif.dx_flush) | bpflush);
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
@@ -59,9 +62,30 @@ module datapath (
   assign xmpif.EN = dpif.ihit | huif.dx_flush;
   assign mwpif.EN = dpif.ihit | dpif.dhit | huif.dx_flush;
 
+  // Branch Predictor
+  assign bpif.br_a = {{14{duif.sign}}, fdpif.instr_o[15:0]} + fdpif.pipe_npc_o;
+  assign bpif.cpc = pcif.cpc;
+  assign bpif.tag = fdpif.pipe_npc_o;
+  assign bpif.pcSel = duif.pcSel;
+
+  // PC
+  assign pcif.pcEN = dpif.ihit && !huif.dx_flush;
+  assign pcif.pcSel = duif.pcSel;
+  assign pcif.bpSel = bpif.phit;
+  assign pcif.bp_a = bpif.addr;
+  assign pcif.br_a = bpif.br_a;
+  assign pcif.immJ26 = duif.immJ26;
+  assign pcif.pipe_npc = fdpif.pipe_npc_o;
+  always_comb casez(fuif.rsBrSel_f)
+    STD: pcif.rdat = rfif.rdat1[31:2];
+    FWD: pcif.rdat = fuif.regbr_f[31:2];
+  endcase
+
   // IF
-  assign dpif.imemaddr = pcif.cpc << 2;
+  assign dpif.imemaddr = bpif.addr << 2;
+  assign fdpif.bp_ai = bpif.addr;
   assign fdpif.instr_i = dpif.imemload;
+  assign fdpif.phit_i = bpif.phit;
   assign fdpif.npc_i = pcif.npc;
 
   // ID
@@ -90,18 +114,7 @@ module datapath (
     default: duif.ef = rfif.rdat1 == rfif.rdat2;
   endcase
 
-  // PC
-  assign pcif.pcEN = dpif.ihit && !huif.dx_flush;
-  assign pcif.pcSel = duif.pcSel;
-  assign pcif.pipe_npc = fdpif.pipe_npc_o;
-  assign pcif.immJ26 = duif.immJ26;
-  assign pcif.ext30 = {{14{duif.sign}}, fdpif.instr_o[15:0]};
-  always_comb casez(fuif.rsBrSel_f)
-    STD: pcif.rdat = rfif.rdat1[31:2];
-    FWD: pcif.rdat = fuif.regbr_f[31:2];
-  endcase
-
-  // X
+  // EX
   always_comb casez(dxpif.aluBSel_o)
     ALUB_RDAT: aluif.b = alubT;
     ALUB_EXT: aluif.b = dxpif.ext32_o;
@@ -128,7 +141,7 @@ module datapath (
   assign xmpif.rfInSel_i = dxpif.rfInSel_o;
   assign xmpif.rfWEN_i = dxpif.rfWEN_o;
 
-  // MEM
+  // EX
   assign mwpif.pipe_npc_i = xmpif.pipe_npc_o;
   assign mwpif.instr_i = xmpif.instr_o;
   assign mwpif.rfInSel_i = xmpif.rfInSel_o;
@@ -148,8 +161,7 @@ module datapath (
 
   assign mwpif.dmemload_i = dpif.dmemload;
 
-  // MEM/WB Registers
-  assign dpif.halt = halt;
+  // Register File
   assign rfif.wsel = mwpif.wsel_o;
   assign rfif.WEN = mwpif.rfWEN_o;
 
@@ -186,8 +198,6 @@ module datapath (
   assign huif.mem_reg = xmpif.instr_o[31:16];
 
   assign huif.ihit = dpif.ihit;
-
-
 
   assign huif.ex_rfWEN = dxpif.rfWEN_o;
   assign huif.mem_rfWEN = xmpif.rfWEN_o;

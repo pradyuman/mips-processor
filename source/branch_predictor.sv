@@ -10,35 +10,20 @@ module btb {
   branch_predictor_if.bp bpif
 };
 
-  logic [57:0] buff, n_buff [3:0];
-  logic [3:0] v;
+  logic [58:0] buff, n_buff [3:0];
   logic pd_taken;
 
-  assign pd_taken = 1;
   always_ff @(posedge CLK. negedge nRST)
-  begin
-      if(!nRST)
-        v <= 0;
-        buff <= '0;
-      else
-        v = next_v;
-        buff = n_buff;
-  end
+    if (!nRST) buff <= '0;
+    else buff = n_buff;
 
-  always_comb
-  begin
-    cpc = pcCpc;
-    if(V[pcCpc[1:0]] && PCcpc[29:2] == buff[pcCpc[1:0]][57:30]) npc = pd_taken ? buff[pcCpc[1:0]][29:0] : pcCpc;
-  end
+  assign pd_taken = 1;
+  assign idx = bpif.cpc[1:0];
+  assign isValid = buff[idx][58];
+  assign isHit = bpif.cpc[29:2] == buff[idx][57:30];
 
-  always_comb
-  begin
-    buff_next = buff;
-    v_next = v;
-    if(pcSel == PC_BR)
-    begin
-      buff_next[brAddr[1:0]] = brAddr[[29:0]];
-      v_next[brAddr[1:0]] = 1;
-    end
-   end
+  assign bpif.phit = isValid & isHit;
+  assign bpif.addr = (pd_taken & bpif.phit) ? buff[idx][29:0] : bpif.cpc;
+
+  assign n_buff[bpif.br_a[1:0]] = pcSel == PC_BR ? { 1'b1, bpif.tag - 1, bpif.br_a[29:2] } : buff[idx];
 endmodule
