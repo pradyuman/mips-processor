@@ -26,9 +26,7 @@ module icache_tb #(parameter PERIOD = 10);
     // Test Reset
     reset();
     for (int i = 0; i<16; i++)
-      if (DUT.idb[i] != 0) begin
-        $display("Reset Failed."); ecnt++;
-      end
+      if (DUT.idb[i] != 0) $display("Reset Failed."); ecnt++;
 
     // Test Cache Empty- Variable Latency
     foreach(A[i]) testICache(A[i], B[i], lat[i]);
@@ -46,10 +44,10 @@ module icache_tb #(parameter PERIOD = 10);
   endtask
 
   task testICache(word_t addr, word_t data, integer lat);
-    dcif.imemaddr = addr; dcif.imemREN = 1;
-    cif.iload = data;
+    dcif.imemaddr = addr; dcif.imemREN = 1; cif.iload = data;
     #(PERIOD * lat);
-    cif.iwait = 0; #PERIOD; cif.iwait = 1; dcif.imemREN = 0;
+    cif.iwait = 0; #PERIOD;
+    cif.iwait = 1; dcif.imemREN = 0;
 
     if (dcif.imemload != data) error(data, lat, ecnt);
   endtask
