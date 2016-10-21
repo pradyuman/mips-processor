@@ -18,7 +18,7 @@ module icache(
   ientry [15:0] idb;
   icachef_t i;
 
-  assign i = icachef_t'(dcif.imemaddr);
+  assign i = dcif.imemaddr;
   assign dcif.imemload = idb[i.idx].data;
 
   always_ff @(posedge CLK, negedge nRST)
@@ -33,7 +33,8 @@ module icache(
     cif.iREN = 0;
     cif.iaddr = 'x;
     dcif.ihit = 0;
-    if (dcif.imemREN & idb[i.idx].valid & idb[i.idx].tag == i.tag) dcif.ihit = 1;
+    if (dcif.imemREN & idb[i.idx].valid & idb[i.idx].tag == i.tag)
+      dcif.ihit = 1;
     else if (dcif.imemREN) begin
       cif.iREN = 1;
       cif.iaddr = dcif.imemaddr;
