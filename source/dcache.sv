@@ -17,7 +17,7 @@ typedef struct packed {
 } dentry;
 
 typedef enum logic [3:0] {
-  IDLE, RHIT, WHIT, WB1, WB2, LD1, LD2, NFL, FL1, FL2, HALT
+  IDLE, RHIT, WHIT, WB1, WB2, LD1, LD2, FL1, FL2, HALT
 } dc_state;
 
 module dcache(
@@ -95,7 +95,7 @@ module dcache(
             n_state = WB1;
           else n_state = LD1;
         end
-        else if (dcif.halt) n_state = NFL;
+        else if (dcif.halt) n_state = FL1;
       end
       RHIT: begin
         cEN = 1;
@@ -110,11 +110,13 @@ module dcache(
       end
       WB1: begin
         cif.dWEN = 1;
+        cif.daddr = dcif.dmemaddr;
         cif.dstore = ddb[i.idx].e[lru].data[0];
         if (!cif.dwait) n_state = WB2;
       end
       WB2: begin
         cif.dWEN = 1;
+        cif.daddr = dcif.dmemaddr;
         cif.dstore = ddb[i.idx].e[lru].data[1];
         if (!cif.dwait) n_state = LD1;
       end
@@ -137,12 +139,14 @@ module dcache(
       end
       FL1: begin
         cif.dWEN = 1;
-        cif.dstore = ddb[i.idx].e[felement].data[0];
+        cif.daddr = { ddb[fentry].e[felement].tag, fentry, 3'b000 };
+        cif.dstore = ddb[fentry].e[felement].data[0];
         if (!cif.dwait) n_state = FL2;
       end
       FL2: begin
         cif.dWEN = 1;
-        cif.dstore = ddb[i.idx].e[felement].data[1];
+        cif.daddr = { ddb[fentry].e[felement].tag, fentry, 3'b100 };
+        cif.dstore = ddb[fentry].e[felement].data[1];
         if (!cif.dwait) begin
           n_felement = !felement;
           n_fentry = felement ? fentry + 1 : fentry;
@@ -150,6 +154,9 @@ module dcache(
         end
       end
       HALT: begin
+        cif.dWEN = 1;
+        cif.dstore = c;
+        cif.daddr = 32'h3100;
         dcif.flushed = 1;
         n_state = HALT;
       end

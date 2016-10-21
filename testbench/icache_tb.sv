@@ -26,9 +26,10 @@ module icache_tb #(parameter PERIOD = 10);
     // Test Reset
     reset();
     for (int i = 0; i<16; i++)
-      if (DUT.idb[i] != 0) $display("Reset Failed."); ecnt++;
+      if (DUT.idb[i] != 0) begin $display("Reset Failed."); ecnt++; end
 
     // Test Cache Empty- Variable Latency
+    foreach(A[i]) testICache(A[i], B[i], lat[i]);
     foreach(A[i]) testICache(A[i], B[i], lat[i]);
 
     $display("TOTAL ERRORS: %0d", ecnt);

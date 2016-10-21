@@ -25,10 +25,11 @@ module dcache_tb #(parameter PERIOD = 10);
 
     // Test Reset
     reset();
-    for (int i = 0; i<16; i++)
+    for (int i = 0; i < 16; i++)
       if (DUT.ddb[i] != 0) $display("Reset Failed."); ecnt++;
 
-    // Test Cache Empty- Variable Latency
+    // Test Cache Empty - Variable Latency
+    foreach(A[i]) testDCacheWrite(A[i], B[i], lat[i]);
     foreach(A[i]) testDCacheRead(A[i], B[i], lat[i]);
 
     $display("TOTAL ERRORS: %0d", ecnt);
@@ -50,6 +51,15 @@ module dcache_tb #(parameter PERIOD = 10);
     cif.dwait = 1; dcif.dmemREN = 0;
 
     if (dcif.dmemload != data) error(data, lat, ecnt);
+  endtask
+
+  task testDCacheWrite(word_t addr, word_t data, integer lat);
+    dcif.dmemaddr = addr; dcif.dmemWEN = 1; cif.dload = data;
+    #(PERIOD * lat);
+    cif.dwait = 0; #PERIOD;
+    cif.dwait = 1; dcif.dmemWEN = 0;
+
+    if (cif.dstore != data) error(data, lat, ecnt);
   endtask
 
   task automatic error(word_t expected, integer lat, ref integer e);
