@@ -17,7 +17,7 @@ typedef struct packed {
 } dentry;
 
 typedef enum logic [3:0] {
-  IDLE, RHIT, WHIT, WB1, WB2, LD1, LD2, FL1, FL2, HALT
+  IDLE, RHIT, WHIT, WB1, WB2, LD1, LD2, FL1, FL2, SC, DHALT
 } dc_state;
 
 module dcache(
@@ -25,140 +25,141 @@ module dcache(
   caches_if.dcache cif,
   datapath_cache_if.dcache dcif
 );
-  word_t c;
+
   dcachef_t i;
-  logic cEN, lru, ei, n_ei;
+  logic lru, valid, dirty;
+  logic [1:0] em;
   dentry [7:0] ddb, n_ddb;
-  logic [2:0] fentry, n_fentry;
-  logic [2:0] felement, n_felement;
+  logic [3:0] fen, n_fen;
   dc_state state, n_state;
 
   assign i = dcif.dmemaddr;
   assign lru = ddb[i.idx].lru;
 
-  always_ff @(posedge CLK, negedge nRST)
+  always_ff @(posedge CLK, negedge nRST) begin
     if (!nRST) begin
-      c <= '0;
-      ei <= '0;
       ddb <= '0;
-      fentry <= '0;
-      felement <= '0;
+      fen <= '0;
       state <= IDLE;
     end
-    else if (dcif.dmemREN) begin
-      c <= cEN ? c + 1 : c;
-      ei <= n_ei;
+    else begin
       ddb <= n_ddb;
-      fentry <= n_fentry;
-      felement <= n_felement;
+      fen <= n_fen;
       state <= n_state;
     end
+  end
+  //Comb Output
+  assign em[0] = ddb[i.idx].e[0].tag == i.tag;
+  assign em[1] = ddb[i.idx].e[1].tag == i.tag;
+  assign dcif.dmemload = em[0] && ddb[i.idx].e[0].data[i.blkoff] |
+                         em[1] && ddb[i.idx].e[1].data[i.blkoff];
+  assign dcif.dhit = em[0] && ddb[i.idx].e[0].valid |
+                     em[1] && ddb[i.idx].e[1].valid;
 
-  assign dcif.dmemload = ddb[i.idx].e[ei].data[i.blkoff];
+  // CT INC, DEC
+  word_t ct;
+  logic prevhit, prevmiss, miss, ctINC, ctDEC;
+  always_ff @(posedge CLK, negedge nRST) begin
+    if(!nRST) begin
+      ct <= 0;
+      prevhit <= 0;
+      prevmiss <= 0;
+    end
+    else begin
+      ct <= ct + ctINC -ctDEC;
+      prevhit <= dcif.dhit;
+      prevmiss <= miss;
+    end
+  end
+  assign miss = state == LD1;
+  assign ctINC = (prevhit ^ dcif.dhit) & dcif.dhit;
+  assign ctDEC = (prevmiss ^ miss) & miss;
 
+  // WHIT->write, MISS->load, HALT
   always_comb begin
-    n_ei = 0;
-    cEN = 0;
     n_ddb = ddb;
-    n_fentry = 0;
+    n_fen = 0;
     n_state = state;
 
-    dcif.dhit = 0;
     dcif.flushed = 0;
-
     cif.dREN = 0;
     cif.dWEN = 0;
     cif.daddr = 'x;
     cif.dstore = 'x;
 
+    n_ddb[i.idx].lru = dcif.dhit & em[0];
+    // WEN HIT
+    if(dcif.dhit)begin
+      n_ddb[i.idx].e[em[1]].data[i.blkoff] = dcif.dmemload;
+    end
+    // MISS, FLUSH, HALT
     casez(state)
       IDLE: begin
-        if (dcif.dmemREN) begin
-          if (ddb[i.idx].e[0].valid & ddb[i.idx].e[0].tag == i.tag)
-            n_state = RHIT;
-          else if (ddb[i.idx].e[1].valid & ddb[i.idx].e[1].tag == i.tag) begin
-            n_ei = 1;
-            n_state = RHIT;
-          end
-          else if (ddb[i.idx].e[0].dirty | ddb[i.idx].e[1].dirty)
-            n_state = WB1;
+        if(dcif.halt) n_state = FL1;
+        else if ((dcif.dmemREN | dcif.dmemWEN) && !dcif.dhit) begin
+          if (ddb[i.idx].e[lru].dirty) n_state = WB1;
           else n_state = LD1;
         end
-        else if (dcif.dmemWEN) begin
-          if (ddb[i.idx].e[0].valid & ddb[i.idx].e[0].tag == i.tag)
-            n_state = WHIT;
-          else if (ddb[i.idx].e[1].valid & ddb[i.idx].e[1].tag == i.tag) begin
-            n_ei = 1;
-            n_state = WHIT;
-          end
-          else if (ddb[i.idx].e[0].dirty | ddb[i.idx].e[1].dirty)
-            n_state = WB1;
-          else n_state = LD1;
-        end
-        else if (dcif.halt) n_state = FL1;
-      end
-      RHIT: begin
-        cEN = 1;
-        n_ddb[i.idx].lru = !ei;
-        dcif.dhit = 1;
-      end
-      WHIT: begin
-        cEN = 1;
-        n_ddb[i.idx].lru = !ei;
-        n_ddb[i.idx].e[ei].data[i.blkoff] = dcif.dmemstore;
-        dcif.dhit = 1;
       end
       WB1: begin
         cif.dWEN = 1;
-        cif.daddr = dcif.dmemaddr;
+        cif.daddr = { ddb[i.idx].e[lru].tag, i.idx, 3'b000 };
         cif.dstore = ddb[i.idx].e[lru].data[0];
         if (!cif.dwait) n_state = WB2;
       end
       WB2: begin
         cif.dWEN = 1;
-        cif.daddr = dcif.dmemaddr;
+        cif.daddr = { ddb[i.idx].e[lru].tag, i.idx, 3'b100 };
         cif.dstore = ddb[i.idx].e[lru].data[1];
         if (!cif.dwait) n_state = LD1;
       end
       LD1: begin
         cif.dREN = 1;
-        cif.daddr = dcif.dmemaddr;
+        cif.daddr = { dcif.dmemaddr[31:1], 1'b0 };
         if (!cif.dwait) begin
-          n_ddb[i.idx].e[lru].data[i.blkoff] = cif.dload;
+          n_ddb[i.idx].e[lru].data[0] = cif.dload;
           n_state = LD2;
         end
       end
       LD2: begin
         cif.dREN = 1;
-        cif.daddr = i.blkoff ? dcif.dmemaddr - 1 : dcif.dmemaddr + 1;
+        cif.daddr = { dcif.dmemaddr[31:1], 1'b1};
         if (!cif.dwait) begin
-          n_ddb[i.idx].e[lru].data[!i.blkoff] = cif.dload;
-          dcif.dhit = 1;
+          n_ddb[i.idx].e[lru].data[1] = cif.dload;
+          n_ddb[i.idx].e[lru].tag = i.tag;
           n_state = IDLE;
         end
       end
       FL1: begin
-        cif.dWEN = 1;
-        cif.daddr = { ddb[fentry].e[felement].tag, fentry, 3'b000 };
-        cif.dstore = ddb[fentry].e[felement].data[0];
-        if (!cif.dwait) n_state = FL2;
+        if(ddb[fen[3:1]].e[fen[0]].dirty) begin
+          cif.dWEN = 1;
+          cif.daddr = { ddb[fen[3:1]].e[fen[0]].tag, fen[3:1], 3'b000 };
+          cif.dstore = ddb[fen[3:1]].e[fen[0]].data[0];
+          if (!cif.dwait) n_state = FL2;
+        end
+        else begin
+          n_fen = fen + 1;
+          n_state = fen == 15 ? DHALT : FL1;
+        end
       end
       FL2: begin
         cif.dWEN = 1;
-        cif.daddr = { ddb[fentry].e[felement].tag, fentry, 3'b100 };
-        cif.dstore = ddb[fentry].e[felement].data[1];
+        cif.daddr = { ddb[fen[3:1]].e[fen[0]].tag, fen[3:1], 3'b100 };
+        cif.dstore = ddb[fen[3:1]].e[fen[0]].data[1];
         if (!cif.dwait) begin
-          n_felement = !felement;
-          n_fentry = felement ? fentry + 1 : fentry;
-          n_state = fentry == 7 ? HALT : FL1;
+          n_fen = fen + 1;
+          n_state = fen == 15 ? DHALT : FL1;
         end
       end
-      HALT: begin
+      SC: begin
         cif.dWEN = 1;
-        cif.dstore = c;
         cif.daddr = 32'h3100;
+        cif.dstore = ct;
+        if(!cif.dwait) n_state = DHALT;
+      end
+      DHALT: begin
         dcif.flushed = 1;
-        n_state = HALT;
+        n_state = DHALT;
       end
     endcase
   end
