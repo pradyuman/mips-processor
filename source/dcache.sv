@@ -51,29 +51,25 @@ module dcache(
   //Comb Output
   assign em[0] = ddb[i.idx].e[0].tag == i.tag;
   assign em[1] = ddb[i.idx].e[1].tag == i.tag;
-  assign dcif.dmemload = em[0] && ddb[i.idx].e[0].data[i.blkoff] |
-                         em[1] && ddb[i.idx].e[1].data[i.blkoff];
-  assign dcif.dhit = em[0] && ddb[i.idx].e[0].valid || em[1] && ddb[i.idx].e[1].valid;
+  assign dcif.dmemload = em[0] ? ddb[i.idx].e[0].data[i.blkoff] : ddb[i.idx].e[1].data[i.blkoff];
+  assign dcif.dhit = (dcif.dmemREN | dcif.dmemWEN) & (em[0] && ddb[i.idx].e[0].valid || em[1] && ddb[i.idx].e[1].valid);
   logic valid0, valid1;
   assign valid0 = ddb[i.idx].e[0].valid;
   assign valid1 = ddb[i.idx].e[1].valid;
   // CT INC, DEC
   word_t ct;
-  logic prevhit, prevmiss, miss, ctINC, ctDEC;
+  logic prevmiss, miss, ctDEC;
   always_ff @(posedge CLK, negedge nRST) begin
     if(!nRST) begin
       ct <= 0;
-      prevhit <= 0;
       prevmiss <= 0;
     end
     else begin
-      ct <= ct + ctINC -ctDEC;
-      prevhit <= dcif.dhit;
+      ct <= dcif.halt ? ct : ct + dcif.dhit - ctDEC;
       prevmiss <= miss;
     end
   end
   assign miss = state == LD1;
-  assign ctINC = (prevhit ^ dcif.dhit) & dcif.dhit;
   assign ctDEC = (prevmiss ^ miss) & miss;
 
   // WHIT->write, MISS->load, HALT
@@ -117,7 +113,7 @@ module dcache(
       end
       LD1: begin
         cif.dREN = 1;
-        cif.daddr = { dcif.dmemaddr[31:1], 1'b0 };
+        cif.daddr = { dcif.dmemaddr[31:3], 3'b000 };
         if (!cif.dwait) begin
           n_ddb[i.idx].e[lru].data[0] = cif.dload;
           n_state = LD2;
@@ -125,7 +121,7 @@ module dcache(
       end
       LD2: begin
         cif.dREN = 1;
-        cif.daddr = { dcif.dmemaddr[31:1], 1'b1};
+        cif.daddr = { dcif.dmemaddr[31:3], 3'b100};
         if (!cif.dwait) begin
           n_ddb[i.idx].e[lru].data[1] = cif.dload;
           n_ddb[i.idx].e[lru].tag = i.tag;
@@ -142,7 +138,7 @@ module dcache(
         end
         else begin
           n_fen = fen + 1;
-          n_state = fen == 15 ? DHALT : FL1;
+          n_state = fen == 15 ? SC : FL1;
         end
       end
       FL2: begin
@@ -151,7 +147,7 @@ module dcache(
         cif.dstore = ddb[fen[3:1]].e[fen[0]].data[1];
         if (!cif.dwait) begin
           n_fen = fen + 1;
-          n_state = fen == 15 ? DHALT : FL1;
+          n_state = fen == 15 ? SC : FL1;
         end
       end
       SC: begin
@@ -162,7 +158,6 @@ module dcache(
       end
       DHALT: begin
         dcif.flushed = 1;
-        n_state = DHALT;
       end
     endcase
   end

@@ -13,7 +13,7 @@ module memory_control(
   assign ccif.iload = ccif.ramload;
   assign ccif.ramstore = ccif.dstore;
   assign ccif.ramWEN = ccif.dWEN;
-  assign ccif.ramREN = ccif.iREN | ccif.dREN;
+  assign ccif.ramREN = (ccif.iREN | ccif.dREN) && !ccif.dWEN;
   assign ccif.ramaddr = (ccif.dREN | ccif.dWEN) ? ccif.daddr : ccif.iaddr;
   assign ccif.dwait = !((ccif.dREN | ccif.dWEN) & (ccif.ramstate == ACCESS));
   assign ccif.iwait = !((ccif.ramstate == ACCESS) & ccif.iREN) | ccif.dREN | ccif.dWEN;

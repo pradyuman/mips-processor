@@ -47,18 +47,19 @@ module datapath (
   logic halt, ihit;
   assign ihit = dpif.ihit & !dpif.dmemREN & !dpif.dmemWEN;
 
-  always_ff @(posedge CLK, negedge nRST)
-    if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
+  //always_ff @(posedge CLK, negedge nRST)
+    //if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
+  assign halt = mwpif.halt_o;
 
   assign fdpif.flush = ihit && (duif.pcSel != PC_NPC && !huif.dx_flush);
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
 
-  assign fdpif.EN = ihit && !huif.dx_flush;
-  assign dxpif.EN = ihit;
-  assign xmpif.EN = ihit | huif.dx_flush;
-  assign mwpif.EN = ihit | dpif.dhit | huif.dx_flush;
+  assign fdpif.EN = (ihit && !huif.dx_flush) && !halt;
+  assign dxpif.EN = ihit && !halt;
+  assign xmpif.EN = (ihit | huif.dx_flush) && !halt;
+  assign mwpif.EN = (ihit | dpif.dhit | huif.dx_flush) && !halt;
 
   // IF
   assign dpif.imemaddr = pcif.cpc << 2;
