@@ -44,20 +44,21 @@ module datapath (
 
   word_t alubT;
 
-  logic halt;
+  logic halt, ihit;
+  assign ihit = dpif.ihit & !dpif.dmemREN & !dpif.dmemWEN;
 
   always_ff @(posedge CLK, negedge nRST)
     if(!nRST) halt <= 0; else halt <= halt | mwpif.halt_o;
 
-  assign fdpif.flush = dpif.ihit && (duif.pcSel != PC_NPC && !huif.dx_flush);
+  assign fdpif.flush = ihit && (duif.pcSel != PC_NPC && !huif.dx_flush);
   assign dxpif.flush = huif.dx_flush;
   assign xmpif.flush = dpif.dhit;
   assign mwpif.flush = 0;
 
-  assign fdpif.EN = dpif.ihit && !huif.dx_flush;
-  assign dxpif.EN = dpif.ihit;
-  assign xmpif.EN = dpif.ihit | huif.dx_flush;
-  assign mwpif.EN = dpif.ihit | dpif.dhit | huif.dx_flush;
+  assign fdpif.EN = ihit && !huif.dx_flush;
+  assign dxpif.EN = ihit;
+  assign xmpif.EN = ihit | huif.dx_flush;
+  assign mwpif.EN = ihit | dpif.dhit | huif.dx_flush;
 
   // IF
   assign dpif.imemaddr = pcif.cpc << 2;
@@ -91,7 +92,7 @@ module datapath (
   endcase
 
   // PC
-  assign pcif.pcEN = dpif.ihit && !huif.dx_flush;
+  assign pcif.pcEN = ihit && !huif.dx_flush;
   assign pcif.pcSel = duif.pcSel;
   assign pcif.pipe_npc = fdpif.pipe_npc_o;
   assign pcif.immJ26 = duif.immJ26;
@@ -185,7 +186,7 @@ module datapath (
   assign huif.ex_reg = dxpif.instr_o[31:16];
   assign huif.mem_reg = xmpif.instr_o[31:16];
 
-  assign huif.ihit = dpif.ihit;
+  assign huif.ihit = ihit;
 
 
 

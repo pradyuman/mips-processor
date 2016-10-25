@@ -22,12 +22,12 @@ typedef enum logic [3:0] {
 
 module dcache(
   input logic CLK, nRST,
-  caches_if.dcache cif,
-  datapath_cache_if.dcache dcif
+  datapath_cache_if.dcache dcif,
+  caches_if.dcache cif
 );
 
   dcachef_t i;
-  logic lru, valid, dirty;
+  logic lru;
   logic [1:0] em;
   dentry [7:0] ddb, n_ddb;
   logic [3:0] fen, n_fen;
@@ -53,9 +53,10 @@ module dcache(
   assign em[1] = ddb[i.idx].e[1].tag == i.tag;
   assign dcif.dmemload = em[0] && ddb[i.idx].e[0].data[i.blkoff] |
                          em[1] && ddb[i.idx].e[1].data[i.blkoff];
-  assign dcif.dhit = em[0] && ddb[i.idx].e[0].valid |
-                     em[1] && ddb[i.idx].e[1].valid;
-
+  assign dcif.dhit = em[0] && ddb[i.idx].e[0].valid || em[1] && ddb[i.idx].e[1].valid;
+  logic valid0, valid1;
+  assign valid0 = ddb[i.idx].e[0].valid;
+  assign valid1 = ddb[i.idx].e[1].valid;
   // CT INC, DEC
   word_t ct;
   logic prevhit, prevmiss, miss, ctINC, ctDEC;
@@ -78,7 +79,7 @@ module dcache(
   // WHIT->write, MISS->load, HALT
   always_comb begin
     n_ddb = ddb;
-    n_fen = 0;
+    n_fen = fen;
     n_state = state;
 
     dcif.flushed = 0;
@@ -87,10 +88,11 @@ module dcache(
     cif.daddr = 'x;
     cif.dstore = 'x;
 
-    n_ddb[i.idx].lru = dcif.dhit & em[0];
+    n_ddb[i.idx].lru = dcif.dhit ? em[0] : ddb[i.idx].lru;
     // WEN HIT
-    if(dcif.dhit)begin
-      n_ddb[i.idx].e[em[1]].data[i.blkoff] = dcif.dmemload;
+    if(dcif.dhit && dcif.dmemWEN)begin
+      n_ddb[i.idx].e[em[1]].data[i.blkoff] = dcif.dmemstore;
+      n_ddb[i.idx].e[em[1]].dirty = 1;
     end
     // MISS, FLUSH, HALT
     casez(state)
@@ -127,6 +129,7 @@ module dcache(
         if (!cif.dwait) begin
           n_ddb[i.idx].e[lru].data[1] = cif.dload;
           n_ddb[i.idx].e[lru].tag = i.tag;
+          n_ddb[i.idx].e[lru].valid = 1;
           n_state = IDLE;
         end
       end

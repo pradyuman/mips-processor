@@ -12,8 +12,8 @@ typedef struct packed {
 
 module icache(
   input logic CLK, nRST,
-  caches_if.icache cif,
-  datapath_cache_if.icache dcif
+  datapath_cache_if.icache dcif,
+  caches_if.icache cif
 );
   ientry [15:0] idb;
   icachef_t i;
