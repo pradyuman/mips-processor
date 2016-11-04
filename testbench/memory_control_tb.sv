@@ -2,116 +2,158 @@
 `include "caches_if.vh"
 `include "cpu_ram_if.vh"
 `timescale 1 ns / 1 ns
-import cpu_types_pkg::word_t;
+import cpu_types_pkg::*;
 
 module memory_control_tb #(parameter PERIOD = 10);
   logic CLK = 0, nRST;
   always #(PERIOD/2) CLK++;
 
-  caches_if cif();
-  cache_control_if #(.CPUS(1)) ccif(.cif0(cif), .cif1(cif));
+  caches_if cif0();
+  caches_if cif1();
+  cache_control_if ccif(.cif0(cif0), .cif1(cif1));
 
-  cpu_ram_if ramif();
-  ram RAM(.CLK, .nRST, .ramif);
-  memory_control DUT(.ccif);
+  memory_control DUT(.CLK, .nRST, .ccif);
 
-  assign ccif.ramload = ramif.ramload;
-  assign ccif.ramstate = ramif.ramstate;
-  assign ramif.ramstore = ccif.ramstore;
-  assign ramif.ramaddr = ccif.ramaddr;
-  assign ramif.ramWEN = ccif.ramWEN;
-  assign ramif.ramREN = ccif.ramREN;
+  typedef enum   logic [2:0] {
+    IDLE, CWB1, CWB2, CLW1, CLW2, SNOOP, SWB1, SWB2
+  } cc_state;
 
-  typedef enum { iREAD, dREAD, dWRITE } cstate;
   static integer ecnt = 0;
 
   initial begin
-    // Test Reset
-    reset();
-    dRead(0);
-    if (cif.dload != 32'h340100F0) error("Reset Failed.", ecnt);
+    init();
 
-    // Test Write -> Read
-    dWrite(0, 99);
-    dRead(0);
-    if (cif.dload != 99) error("Write Failed.", ecnt);
+    // Write from cif0
+    cif0.daddr = 5;
+    cif0.dstore = 32;
+    cif0.dWEN = 1;
     #PERIOD;
-    dRead(10);
-    #(PERIOD*4);
-    if (cif.dload == 99) error("Write wrong location.", ecnt);
+    if (DUT.state != CWB1) error("[cif0 write] Not entering CWB1", ecnt);
+    if (ccif.ramstore != 32) error("[cif0 write] ccif.ramstore incorrect", ecnt);
+    if (ccif.ramaddr != 5) error("[cif0 write] ccif.ramaddr incorrect", ecnt);
+
+    cif0.daddr = 6;
+    cif0.dstore = 45;
+    #PERIOD;
+    if (DUT.state != CWB2) error("[cif0 write] Not entering CWB2", ecnt);
+    if (ccif.ramstore != 45) error("[cif0 write] ccif.ramstore incorrect", ecnt);
+    if (ccif.ramaddr != 6) error("[cif0 write] ccif.ramaddr incorrect", ecnt);
+
+    #PERIOD;
+    cif0.dWEN = 0;
+    if (DUT.state != IDLE) error("[cif0 write] Not going back to IDLE CWB2", ecnt);
+
+    // Write from cif1
+    cif1.daddr = 7;
+    cif1.dstore = 22;
+    cif1.dWEN = 1;
+    #PERIOD;
+    if (DUT.state != CWB1) error("[cif1 write] Not entering CWB1", ecnt);
+    if (ccif.ramstore != 22) error("[cif1 write] ccif.ramstore incorrect", ecnt);
+    if (ccif.ramaddr != 7) error("[cif1 write] ccif.ramaddr incorrect", ecnt);
+
+    cif1.daddr = 8;
+    cif1.dstore = 35;
+    #PERIOD;
+    if (DUT.state != CWB2) error("[cif1 write] Not entering CWB2", ecnt);
+    if (ccif.ramstore != 35) error("[cif1 write] ccif.ramstore incorrect", ecnt);
+    if (ccif.ramaddr != 8) error("[cif1 write] ccif.ramaddr incorrect", ecnt);
+
+    #PERIOD;
+    cif1.dWEN = 0;
+    if (DUT.state != IDLE) error("[cif1 write] Not going back to IDLE", ecnt);
+
+    // Read from cif1 (SNOOP)
+    cif1.daddr = 5;
+    cif1.dREN = 1;
+
+    #PERIOD;
+    if (DUT.state != SNOOP) error("[cif1 SNOOP] Not entering SNOOP", ecnt);
+    if (ccif.ramWEN) error("[cif1 SNOOP] ccif.ramWEN asserted in SNOOP", ecnt);
+    if (!ccif.dwait) error("[cif1 SNOOP] ccif.dwait not asserted in SNOOP", ecnt);
+    if (cif0.ccwait != 1) error("[cif1 SNOOP] cif0.ccwait not asserted", ecnt);
+    if (cif0.ccsnoopaddr != 5) error("[cif1 SNOOP] cif0.ccsnoopaddr incorrect", ecnt);
+
+    cif0.dstore = 32;
+    cif0.ccwrite = 1;
+
+    #PERIOD;
+    if (DUT.state != SWB1) error("[cif1 SNOOP] Not entering SWB1", ecnt);
+    if (!ccif.ramWEN) error("[cif1 SNOOP] ccif.ramWEN not asserted in SWB1", ecnt);
+    if (!ccif.dwait) error("[cif1 SNOOP] ccif.dwait not asserted in SWB1", ecnt);
+    if (cif1.dload != 32) error("[cif1 SNOOP] cif1.dload incorrect in SWB1", ecnt);
+
+    cif0.dstore = 45;
+    cif0.ccwrite = 0;
+
+    #PERIOD;
+    if (DUT.state != SWB2) error("[cif1 SNOOP] Not entering SWB2", ecnt);
+    if (!ccif.ramWEN) error("[cif1 SNOOP] ccif.ramWEN not asserted in SWB2", ecnt);
+    if (ccif.dwait) error("[cif1 SNOOP] ccif.dwait asserted in SWB2", ecnt);
+    if (cif1.dload != 45) error("[cif1 SNOOP] cif1.dload incorrect in SWB2", ecnt);
+
+    #PERIOD;
+    cif1.dREN = 0;
+    if (DUT.state != IDLE) error("[cif1 SNOOP] Not going back to IDLE", ecnt);
+    if (ccif.ramWEN) error("[cif1 SNOOP] ccif.ramWEN asserted in IDLE", ecnt);
+    if (ccif.dwait) error("[cif1 SNOOP] ccif.dwait asserted in IDLE", ecnt);
+    if (cif1.dload != 45) error("[cif1 SNOOP] cif1.dload incorrect in IDLE", ecnt);
+
+    // Read from cif1 (RAM READ)
+    cif1.daddr = 100;
+    cif1.dREN = 1;
+
+    #PERIOD;
+    if (DUT.state != SNOOP) error("[cif1 RAM READ] Not entering SNOOP", ecnt);
+    if (!cif0.ccwait) error("[cif1 RAM READ] cif0.ccwait not asserted", ecnt);
+    if (cif0.ccsnoopaddr != 100) error("[cif1 RAM READ] cif0.ccsnoopaddr incorrect", ecnt);
+
+    cif0.ccwrite = 0;
+
+    #PERIOD;
+    if (DUT.state != CLW1) error("[cif1 RAM READ] Not entering CLW1", ecnt);
+    if (!ccif.ramREN) error("[cif1 RAM READ] ccif.ramREN not asserted in CLW1", ecnt);
+    if (ccif.ramaddr != 100) error("[cif1 RAM READ] ccif.ramaddr incorrect in CLW1", ecnt);
+    if (!cif1.dwait) error("[cif1 RAM READ] cif1.dwait not asserted in CLW1", ecnt);
+
+    ccif.ramload = 125;
+
+    #PERIOD;
+    if (DUT.state != CLW2) error("[cif1 RAM READ] Not entering CLW2", ecnt);
+    if (cif1.dload != 125) error("[cif1 RAM READ] cif1.dload incorrect in CLW2", ecnt);
+    if (cif1.dwait) error("[cif1 RAM READ] cif1.dwait asserted in CLW1", ecnt);
+
+    ccif.ramload = 130;
+
+    #PERIOD;
+    if (DUT.state != IDLE) error("[cif1 RAM READ] Not entering IDLE", ecnt);
+    if (cif1.dload != 130) error("[cif1 RAM READ] cif1.dload incorrect in IDLE", ecnt);
+    if (cif1.dwait) error("[cif1 RAM READ] cif1.dwait asserted in CLW1", ecnt);
+
     $display("TOTAL ERRORS: %0d", ecnt);
-    dump_memory();
     $finish;
   end
 
-  // Reset RAM
-  task reset;
-    nRST = 1'b1; #PERIOD;
-    nRST = 1'b0; #PERIOD;
-    nRST = 1'b1; #PERIOD;
-  endtask
+  task init;
+    // Reset
+    nRST = 1; #PERIOD;
+    nRST = 0; #PERIOD;
+    nRST = 1; #PERIOD;
 
-  task set(cstate state);
-    cif.iREN = state == iREAD;
-    cif.dREN = state == dREAD;
-    cif.dWEN = state == dWRITE;
-    #PERIOD;
-  endtask
+    cif0.iREN = 0;
+    cif0.dREN = 0;
+    cif0.dWEN = 0;
+    cif0.cctrans = 0;
 
-  task dWrite(word_t addr, word_t value);
-    cif.daddr = addr; cif.dstore = value; set(dWRITE);
-  endtask
+    cif1.iREN = 0;
+    cif1.dREN = 0;
+    cif1.dWEN = 0;
+    cif1.cctrans = 0;
 
-  task dRead(word_t addr);
-    cif.daddr = addr; set(dREAD);
-  endtask
-
-  task iRead(word_t addr, word_t value);
-    cif.iaddr = addr; set(iREAD);
-  endtask
-
-  task automatic dump_memory();
-    string filename = "memcpu.hex";
-    int memfd;
-
-    cif.daddr = 0;
-    cif.iREN = 0;
-    cif.dWEN = 0;
-    cif.dREN = 0;
-
-    memfd = $fopen(filename,"w");
-    if (memfd)
-      $display("Starting memory dump.");
-    else
-      begin $display("Failed to open %s.",filename); $finish; end
-
-    for (int unsigned i = 0; memfd && i < 16384; i++)
-    begin
-      int chksum = 0;
-      bit [7:0][7:0] values;
-      string ihex;
-
-      cif.daddr = i << 2;
-      cif.dREN = 1;
-      repeat (4) @(posedge CLK);
-      if (cif.dload === 0)
-        continue;
-      values = {8'h04,16'(i),8'h00,cif.dload};
-      foreach (values[j]) chksum += values[j];
-      chksum = 16'h100 - chksum;
-      ihex = $sformatf(":04%h00%h%h",16'(i),cif.dload,8'(chksum));
-      $fdisplay(memfd,"%s",ihex.toupper());
-    end //for
-    if (memfd)
-    begin
-      cif.dREN = 0;
-      $fdisplay(memfd,":00000001FF");
-      $fclose(memfd);
-      $display("Finished memory dump.");
-    end
+    ccif.ramstate = ACCESS;
   endtask
 
   task automatic error(string message, ref integer e);
-    $display("ERROR: %s | dload - %0d", message, cif.dload); e++;
+    $display("ERROR: %s", message); e++;
   endtask
 endmodule
