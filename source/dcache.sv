@@ -17,11 +17,11 @@ typedef struct packed {
 } dentry;
 
 typedef enum logic [3:0] {
-  IDLE, RHIT, WHIT, WB1, WB2, LD1, LD2, FL1, FL2, SC, DHALT
+  IDLE, WB1, WB2, LD1, LD2, FL1, FL2, SC, DHALT
 } dc_state;
 
 module dcache(
-  input logic CLK, nRST,
+  input logic CLK, nRST, 
   datapath_cache_if.dcache dcif,
   caches_if.dcache cif
 );
@@ -53,9 +53,6 @@ module dcache(
   assign em[1] = ddb[i.idx].e[1].tag == i.tag;
   assign dcif.dmemload = em[0] ? ddb[i.idx].e[0].data[i.blkoff] : ddb[i.idx].e[1].data[i.blkoff];
   assign dcif.dhit = (dcif.dmemREN | dcif.dmemWEN) & (em[0] && ddb[i.idx].e[0].valid || em[1] && ddb[i.idx].e[1].valid);
-  logic valid0, valid1;
-  assign valid0 = ddb[i.idx].e[0].valid;
-  assign valid1 = ddb[i.idx].e[1].valid;
   // CT INC, DEC
   word_t ct;
   logic prevmiss, miss, ctDEC;
