@@ -32,7 +32,7 @@ module datapath (
 
   alu ALU(aluif);
   decode_unit DU(duif);
-  pc #(PC_INIT) PC(CLK, nRST, pcif);
+  pc #(PC_INIT >> 2) PC(CLK, nRST, pcif);
   register_file RF(CLK, nRST, rfif);
   forwarding_unit FU (fuif);
   hazard_unit HU (huif);
@@ -188,8 +188,6 @@ module datapath (
   assign huif.mem_reg = xmpif.instr_o[31:16];
 
   assign huif.ihit = ihit;
-
-
 
   assign huif.ex_rfWEN = dxpif.rfWEN_o;
   assign huif.mem_rfWEN = xmpif.rfWEN_o;
