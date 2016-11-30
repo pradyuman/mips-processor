@@ -23,8 +23,8 @@ module memory_control(
 
   assign inegedge = (ihit ^ p_ihit) & !ihit;
 
-  logic curr, darb, n_darb, iarb, dEN;
-  logic [1:0] en;
+  logic curr, darb, iarb, dEN, sEN;
+  logic [1:0] dataEN;
   always_ff @(posedge CLK, negedge nRST)
     if (!nRST) begin
       state <= IDLE;
@@ -35,20 +35,20 @@ module memory_control(
       iarb = iarb ^ inegedge;
     end
 
-  assign en = ccif.dREN | ccif.dWEN;
+  assign dataEN = ccif.dREN | ccif.dWEN;
   assign darb = 1;
-  assign curr = en[0] && en[1] ? darb : en[1];
+  assign curr = dataEN[0] && dataEN[1] ? darb : dataEN[1];
 
   assign ccif.ccinv = { ccif.cctrans[0], ccif.cctrans[1] };
   assign ccif.ccsnoopaddr = { ccif.daddr[0], ccif.daddr[1] };
   assign ccif.ramstore = state == SWB1 | state == SWB2 ? ccif.dstore[!curr] : ccif.dstore[curr];
-  assign ccif.ramREN = !ccif.ramWEN && ccif.iREN;
+  assign ccif.ramREN = !ccif.ramWEN && (ccif.iREN || sEN);
   assign ccif.iload = {{2{ccif.ramload}}};
 
-  assign ccif.ramaddr = en ? ccif.daddr[curr] : ccif.iaddr[iarb];
+  assign ccif.ramaddr = dataEN ? ccif.daddr[curr] : ccif.iREN[0] && ccif.iREN[1] ? ccif.iaddr[iarb] : ccif.iaddr[ccif.iREN[1]];
 
-  assign ccif.iwait[0] = !(ccif.iREN[0] && !en && !iarb && ccif.ramstate == ACCESS);
-  assign ccif.iwait[1] = !(ccif.iREN[1] && !en && iarb && ccif.ramstate == ACCESS);
+  assign ccif.iwait[0] = !(ccif.iREN[0] && !dataEN && !iarb && ccif.ramstate == ACCESS);
+  assign ccif.iwait[1] = !(ccif.iREN[1] && !dataEN && iarb && ccif.ramstate == ACCESS);
 
   always_comb begin
     ccif.dwait = 2'b11;
@@ -63,21 +63,20 @@ module memory_control(
     ccif.ccwait = 0;
     ccif.ramWEN = 0;
     dEN = 1;
+    sEN = 0;
     casez(state)
       IDLE: begin
         dEN = 0;
-        if (ccif.ramstate == ACCESS) begin
+        if (ccif.ramstate == ACCESS || ccif.ramstate == FREE) begin
           if (ccif.dWEN[curr]) n_state = CWB1;
           if (ccif.dREN[curr]) n_state = SNOOP;
         end
       end
       SNOOP: begin
-        //n_darb = !darb;
         ccif.ccwait[!curr] = 1;
         n_state = ccif.ccwrite[!curr] ? SWB1 : CLW1;
       end
       CWB1: begin
-        //n_darb = !darb;
         ccif.ramWEN = 1;
         if (ccif.ramstate == ACCESS) begin
           n_state = CWB2;
@@ -106,12 +105,13 @@ module memory_control(
         end
       end
       CLW1: begin
-       // n_darb = !darb;
+        sEN = 1;
         if (ccif.ramstate == ACCESS) begin
           n_state = CLW2;
         end
       end
       CLW2: begin
+        sEN = 1;
         if (ccif.ramstate == ACCESS) begin
           n_state = IDLE;
         end
