@@ -80,6 +80,7 @@ module datapath (
   assign dxpif.aluBSel_i = duif.aluBSel;
   assign dxpif.aluop_i = duif.op;
   assign dxpif.wsel_i = duif.wsel;
+  assign dxpif.datomic_i = duif.datomic;
   assign dxpif.dREN_i = duif.dREN;
   assign dxpif.dWEN_i = duif.dWEN;
 
@@ -124,6 +125,7 @@ module datapath (
   assign xmpif.rdat2_i = alubT;
   assign xmpif.pipe_npc_i = dxpif.pipe_npc_o;
   assign xmpif.wsel_i = dxpif.wsel_o;
+  assign xmpif.datomic_i = dxpif.datomic_o;
   assign xmpif.dREN_i = dxpif.dREN_o;
   assign xmpif.dWEN_i = dxpif.dWEN_o;
   assign xmpif.halt_i = dxpif.halt_o;
@@ -140,6 +142,7 @@ module datapath (
   assign mwpif.aluout_i = xmpif.aluout_o;
 
   assign dpif.imemREN = !halt;
+  assign dpif.datomic = xmpif.datomic_o;
   assign dpif.dmemREN = xmpif.dREN_o;
   assign dpif.dmemWEN = xmpif.dWEN_o;
   assign dpif.dmemaddr = xmpif.aluout_o;

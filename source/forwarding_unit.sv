@@ -47,12 +47,10 @@ module forwarding_unit(forwarding_unit_if.fu fuif);
     end
   end
 
-  // LW/SW Data Hazard Forwarding ()
-
   // Write Back Forward to MEM (rs)
   assign fuif.dmem_f = fuif.wb_rfwdat;
   always_comb
-    if (mem_op == SW && fuif.wb_dest != 0 && fuif.wb_dest == mem_rt)
+    if ((mem_op == SW || mem_op == SC) && fuif.wb_dest != 0 && fuif.wb_dest == mem_rt)
       fuif.dstrSel_f = FWD;
     else
       fuif.dstrSel_f = STD;

@@ -23,6 +23,7 @@ module ID_EX_pipe(
       dxpif.wsel_o <= 0;
       dxpif.rfInSel_o <= rfInMux'(0);
       dxpif.rfWEN_o <= 0;
+      dxpif.datomic_o <= 0;
       dxpif.dREN_o <= 0;
       dxpif.dWEN_o <= 0;
       dxpif.halt_o <= 0;
@@ -38,6 +39,7 @@ module ID_EX_pipe(
       dxpif.wsel_o <= 0;
       dxpif.rfInSel_o <= rfInMux'(0);
       dxpif.rfWEN_o <= 0;
+      dxpif.datomic_o <= 0;
       dxpif.dREN_o <= 0;
       dxpif.dWEN_o <= 0;
       dxpif.halt_o <= 0;
@@ -53,6 +55,7 @@ module ID_EX_pipe(
       dxpif.wsel_o <= dxpif.wsel_i;
       dxpif.rfInSel_o <= dxpif.rfInSel_i;
       dxpif.rfWEN_o <= dxpif.rfWEN_i;
+      dxpif.datomic_o <= dxpif.datomic_i;
       dxpif.dREN_o <= dxpif.dREN_i;
       dxpif.dWEN_o <= dxpif.dWEN_i;
       dxpif.halt_o <= dxpif.halt_i;

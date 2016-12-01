@@ -19,6 +19,7 @@ module decode_unit(decode_unit_if.du duif);
   assign duif.immJ26 = duif.ins[25:0];
 
   always_comb begin
+    duif.datomic = 0;
     duif.dREN = 0;
     duif.dWEN = 0;
     duif.WEN = 1;
@@ -124,6 +125,12 @@ module decode_unit(decode_unit_if.du duif);
         duif.op = ALU_ADD;
         duif.rfInSel = RFIN_RAM;
       end
+      LL: begin
+        duif.datomic = 1;
+        duif.dREN = 1;
+        duif.op = ALU_ADD;
+        duif.rfInSel = RFIN_RAM;
+      end
       SW: begin
         duif.dWEN = 1;
         duif.WEN = 0;
@@ -131,6 +138,15 @@ module decode_unit(decode_unit_if.du duif);
         duif.rsel2 = regbits_t'(duif.ins[20:16]);
         duif.wsel = regbits_t'('x);
         duif.rfInSel = rfInMux'('x);
+      end
+      SC: begin
+        duif.datomic = 1;
+        duif.dWEN = 1;
+        duif.WEN = 1;
+        duif.op = ALU_ADD;
+        duif.rsel2 = regbits_t'(duif.ins[20:16]);
+        duif.wsel = regbits_t'(duif.ins[20:16]);
+        duif.rfInSel = RFIN_RAM;
       end
       HALT: begin
         duif.halt = 1;

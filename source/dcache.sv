@@ -26,15 +26,46 @@ module dcache(
   caches_if.dcache cif
 );
   dcachef_t i, s;
+  assign i = dcif.dmemaddr;
+  assign s = cif.ccsnoopaddr;
+
+  // LL SC
+  logic avalid, n_avalid; // atomic valid
+  word_t aaddr, n_aaddr; // atomic addr
+  always_ff @(posedge CLK, negedge nRST) begin
+    if (!nRST) begin
+      avalid <= '0;
+      aaddr <= '0;
+    end
+    else begin
+      avalid <= n_avalid;
+      aaddr <= n_aaddr;
+    end
+  end
+
+  always_comb begin
+    n_avalid = avalid;
+    n_aaddr = aaddr;
+    // If LL
+    if (dcif.datomic && dcif.dmemREN) begin
+      n_avalid = 1;
+      n_aaddr = i;
+    end
+    // If invalid
+    else if (cif.ccinv && aaddr == s)
+      n_avalid = 0;
+  end
+
   logic lru;
   logic [1:0] em, sm;
   dentry [7:0] ddb, n_ddb;
   logic [3:0] fen, n_fen;
   dc_state state, n_state;
+
+  // sdata: snoop data
+  // cdata: cache data
   word_t sdata, caddr, cdata;
 
-  assign i = dcif.dmemaddr;
-  assign s = cif.ccsnoopaddr;
   assign lru = ddb[i.idx].lru;
 
   always_ff @(posedge CLK, negedge nRST) begin
@@ -55,8 +86,17 @@ module dcache(
   assign em[1] = ddb[i.idx].e[1].valid & ddb[i.idx].e[1].tag == i.tag;
   assign sm[0] = ddb[s.idx].e[0].valid & ddb[s.idx].e[0].tag == s.tag;
   assign sm[1] = ddb[s.idx].e[1].valid & ddb[s.idx].e[1].tag == s.tag;
-  assign dcif.dmemload = em[0] ? ddb[i.idx].e[0].data[i.blkoff] : ddb[i.idx].e[1].data[i.blkoff];
-  assign dcif.dhit = (dcif.dmemREN | dcif.dmemWEN) & !cif.ccwait & (em[0] && ddb[i.idx].e[0].valid || em[1] && ddb[i.idx].e[1].valid);
+
+  always_comb
+    // If SC
+    if (dcif.datomic && dcif.dmemWEN)
+      dcif.dmemload = avalid;
+    else if (em[0])
+      dcif.dmemload = ddb[i.idx].e[0].data[i.blkoff];
+    else
+      dcif.dmemload = ddb[i.idx].e[1].data[i.blkoff];
+
+  assign dcif.dhit = (dcif.dmemREN || dcif.dmemWEN) && !cif.ccwait && em;
 
   assign sdata = sm[0] ? ddb[s.idx].e[0].data[s.blkoff] : ddb[s.idx].e[1].data[s.blkoff];
   assign cif.daddr = cif.cctrans ? i : caddr;

@@ -8,7 +8,7 @@ import cpu_types_pkg::*;
 import mux_types_pkg::*;
 
 interface decode_unit_if;
-  logic WEN, dREN, dWEN;
+  logic WEN, dREN, dWEN, datomic;
   logic sign, ef, halt;
   logic [25:0] immJ26;
   word_t ins;
@@ -20,7 +20,7 @@ interface decode_unit_if;
 
   modport du (
     input ins, ef,
-    output WEN, dREN, dWEN,
+    output WEN, dREN, dWEN, datomic,
            aluBSel, rfInSel, pcSel, wsel,
            rsel1, rsel2, sign, immJ26,
            op, halt
