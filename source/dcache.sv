@@ -59,7 +59,7 @@ module dcache(
   assign dcif.dhit = (dcif.dmemREN | dcif.dmemWEN) & !cif.ccwait & (em[0] && ddb[i.idx].e[0].valid || em[1] && ddb[i.idx].e[1].valid);
 
   assign sdata = sm[0] ? ddb[s.idx].e[0].data[s.blkoff] : ddb[s.idx].e[1].data[s.blkoff];
-  assign cif.daddr = ccif.cctrans ? i : caddr;
+  assign cif.daddr = cif.cctrans ? i : caddr;
   assign cif.dstore = cif.ccwait ? sdata : cdata;
   assign cif.ccwrite = cif.ccwait & (sm[0] && ddb[s.idx].e[0].dirty || sm[1] && ddb[s.idx].e[1].dirty);
   assign cif.cctrans = dcif.dmemWEN & dcif.dhit;
