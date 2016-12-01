@@ -43,6 +43,10 @@ module dcache(
     end
   end
 
+  logic sc, scf;
+  assign sc = dcif.datomic && dcif.dmemWEN;
+  assign scf = sc & !avalid;
+
   always_comb begin
     n_avalid = avalid;
     n_aaddr = aaddr;
@@ -52,7 +56,7 @@ module dcache(
       n_aaddr = i;
     end
     // If invalid
-    else if (cif.ccinv && aaddr == s)
+    if ((cif.ccinv && aaddr == s) | sc | (aaddr == i && dcif.dmemWEN))
       n_avalid = 0;
   end
 
@@ -81,22 +85,20 @@ module dcache(
     end
   end
 
-  //Comb Output
   assign em[0] = ddb[i.idx].e[0].valid & ddb[i.idx].e[0].tag == i.tag;
   assign em[1] = ddb[i.idx].e[1].valid & ddb[i.idx].e[1].tag == i.tag;
   assign sm[0] = ddb[s.idx].e[0].valid & ddb[s.idx].e[0].tag == s.tag;
   assign sm[1] = ddb[s.idx].e[1].valid & ddb[s.idx].e[1].tag == s.tag;
 
   always_comb
-    // If SC
-    if (dcif.datomic && dcif.dmemWEN)
+    if (sc)
       dcif.dmemload = avalid;
     else if (em[0])
       dcif.dmemload = ddb[i.idx].e[0].data[i.blkoff];
     else
       dcif.dmemload = ddb[i.idx].e[1].data[i.blkoff];
 
-  assign dcif.dhit = (dcif.dmemREN || dcif.dmemWEN) && !cif.ccwait && em;
+  assign dcif.dhit = (dcif.dmemREN || dcif.dmemWEN) && !cif.ccwait && em | scf;
 
   assign sdata = sm[0] ? ddb[s.idx].e[0].data[s.blkoff] : ddb[s.idx].e[1].data[s.blkoff];
   assign cif.daddr = cif.cctrans ? i : caddr;
@@ -120,7 +122,7 @@ module dcache(
     if (cif.ccinv && sm) n_ddb[s.idx].e[sm[1]].valid = 0;
     if (cif.ccwrite) n_ddb[s.idx].e[sm[1]].dirty = 0;
     // WEN HIT
-    if (dcif.dhit && dcif.dmemWEN) begin
+    if (dcif.dhit && !scf && dcif.dmemWEN) begin
       n_ddb[i.idx].e[em[1]].data[i.blkoff] = dcif.dmemstore;
       n_ddb[i.idx].e[em[1]].dirty = 1;
     end
@@ -132,8 +134,10 @@ module dcache(
         else if ((dcif.dmemREN | dcif.dmemWEN) && !dcif.dhit)
           if (ddb[i.idx].e[lru].dirty && ddb[i.idx].e[lru].valid)
             n_state = WB1;
-          else
+          else begin
             n_state = LD1;
+            if(scf) n_state = IDLE;
+          end
       end
       WB1: begin
         cif.dWEN = 1;
