@@ -32,7 +32,7 @@ module memory_control(
     end
     else begin
       state <= n_state;
-      iarb = iarb ^ inegedge;
+      iarb <= iarb ^ inegedge;
     end
 
   assign dataEN = ccif.dREN | ccif.dWEN;
@@ -47,8 +47,23 @@ module memory_control(
 
   assign ccif.ramaddr = dataEN ? ccif.daddr[curr] : ccif.iREN[0] && ccif.iREN[1] ? ccif.iaddr[iarb] : ccif.iaddr[ccif.iREN[1]];
 
-  assign ccif.iwait[0] = !(ccif.iREN[0] && !dataEN && !iarb && ccif.ramstate == ACCESS);
-  assign ccif.iwait[1] = !(ccif.iREN[1] && !dataEN && iarb && ccif.ramstate == ACCESS);
+  always_comb begin
+    ccif.iwait = 2'b11;
+    if (!dataEN) begin
+      if (ccif.iREN == 2'b01) begin
+        if (ccif.ramstate == ACCESS)
+          ccif.iwait[0] = 0;
+      end
+      else if (ccif.iREN == 2'b10) begin
+        if (ccif.ramstate == ACCESS)
+          ccif.iwait[1] = 0;
+      end
+      else if (ccif.iREN == 2'b11) begin
+        if (ccif.ramstate == ACCESS)
+          ccif.iwait[iarb] = 0;
+      end
+    end
+  end
 
   always_comb begin
     ccif.dwait = 2'b11;

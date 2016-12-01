@@ -139,7 +139,7 @@ module datapath (
   assign mwpif.halt_i = xmpif.halt_o;
   assign mwpif.aluout_i = xmpif.aluout_o;
 
-  assign dpif.imemREN = 1;
+  assign dpif.imemREN = !halt;
   assign dpif.dmemREN = xmpif.dREN_o;
   assign dpif.dmemWEN = xmpif.dWEN_o;
   assign dpif.dmemaddr = xmpif.aluout_o;

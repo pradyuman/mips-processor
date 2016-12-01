@@ -90,8 +90,10 @@ module dcache(
       IDLE: begin
         if (dcif.halt) n_state = FL1;
         else if ((dcif.dmemREN | dcif.dmemWEN) && !dcif.dhit)
-          if (ddb[i.idx].e[lru].dirty) n_state = WB1;
-          else n_state = LD1;
+          if (ddb[i.idx].e[lru].dirty && ddb[i.idx].e[lru].valid)
+            n_state = WB1;
+          else
+            n_state = LD1;
       end
       WB1: begin
         cif.dWEN = 1;
@@ -120,14 +122,14 @@ module dcache(
         if (!cif.dwait) begin
           n_ddb[i.idx].e[lru].data[1] = cif.dload;
           n_ddb[i.idx].e[lru].tag = i.tag;
-          n_ddb[i.idx].e[lru].valid = 1;
+          n_ddb[i.idx].e[lru].valid = !(cif.ccinv && s.tag == i.tag);
           n_state = IDLE;
         end
       end
       FL1: begin
         caddr = { ddb[fen[3:1]].e[fen[0]].tag, fen[3:1], 3'b000 };
         cdata = ddb[fen[3:1]].e[fen[0]].data[0];
-        if (ddb[fen[3:1]].e[fen[0]].dirty) begin
+        if (ddb[fen[3:1]].e[fen[0]].dirty & ddb[fen[3:1]].e[fen[0]].valid) begin
           cif.dWEN = 1;
           if (!cif.dwait) n_state = FL2;
         end
